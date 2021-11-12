@@ -54,6 +54,12 @@ class CarInterface(CarInterfaceBase):
     ret.enableGasInterceptor = 0x201 in fingerprint[0]
     if ret.enableGasInterceptor:
       ret.radarOffCan = False
+      
+      #putting default longitudinal tuning here. Override as needed below
+      ret.longitudinalTuning.kpBP = [5., 35.]
+      ret.longitudinalTuning.kpV = [2.4, 1.5]
+      ret.longitudinalTuning.kiBP = [0.]
+      ret.longitudinalTuning.kiV = [0.36]
 
     if candidate == CAR.VOLT or candidate == CAR.VOLT_NR:
       # supports stop and go, but initial engage must be above 18mph (which include conservatism)
@@ -131,12 +137,20 @@ class CarInterface(CarInterfaceBase):
       ret.minEnableSpeed = 25 * CV.MPH_TO_MS
       if ret.enableGasInterceptor:
         ret.minEnableSpeed = 5 * CV.MPH_TO_MS #steering works down to 5mph; pedal to 0
+        ret.gasMaxBP = [0.0, 5.0, 9.0, 35.0] #felger
+        ret.gasMaxV =  [0.4, 0.5, 0.7, 0.7]
+        ret.longitudinalTuning.kpBP = [0.0, 5.0, 10.0, 20.0, 35.0] 
+        ret.longitudinalTuning.kpV = [0.6, 0.95, 1.19, 1.27, 1.18] 
+        ret.longitudinalTuning.kiV = [0.31, 0.26]
       ret.mass = 1616. + STD_CARGO_KG
       ret.wheelbase = 2.60096
       ret.steerRatio = 16.8
       ret.steerRatioRear = 0.
       ret.centerToFront = 2.0828 #ret.wheelbase * 0.4 # wild guess
-      tire_stiffness_factor = 1.0
+      ret.lateralTuning.pid.kpBP, ret.lateralTuning.pid.kiBP = [[18., 38.], [0.]] #darknight111
+      ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.2, 0.217], [0.]]
+      ret.lateralTuning.pid.kf = 0.00012  
+      tire_stiffness_factor = 0.5
 
     elif candidate == CAR.EQUINOX_NR:
       ret.minEnableSpeed = 18 * CV.MPH_TO_MS
