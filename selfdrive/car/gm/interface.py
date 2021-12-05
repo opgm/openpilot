@@ -176,6 +176,8 @@ class CarInterface(CarInterfaceBase):
 
     elif candidate == CAR.SILVERADO_NR:
       ret.minEnableSpeed = -1.  # engage speed is decided by pcm
+      ret.minSteerSpeed = -1 * CV.MPH_TO_MS
+      ret.steerActuatorDelay = 0.07
       ret.mass = 2241. + STD_CARGO_KG
       ret.wheelbase = 3.745
       ret.steerRatio = 16.3 # From a 2019 SILVERADO
