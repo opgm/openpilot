@@ -66,11 +66,13 @@ class CarInterface(CarInterfaceBase):
 
     # Start with a baseline lateral tuning for all GM vehicles. Override tuning as needed in each model section below.
     ret.minSteerSpeed = 7 * CV.MPH_TO_MS
-    ret.lateralTuning.pid.kiBP, ret.lateralTuning.pid.kpBP = [[0.], [0.]]
-    ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.2], [0.00]]
-    ret.lateralTuning.pid.kf = 0.00004   # full torque for 20 deg at 80mph means 0.00007818594
-    ret.steerRateCost = 1.0
-    ret.steerActuatorDelay = 0.1  # Default delay, not measured yet
+    ret.lateralTuning.pid.kpBP, ret.lateralTuning.pid.kiBP = [[10., 41.0], [10., 41.0]] #Felger's lateral tune with some adjustment
+    ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.18, 0.26], [0.01, 0.02]]
+    ret.lateralTuning.pid.kdBP = [0.]
+    ret.lateralTuning.pid.kdV = [0.317] #sensitive variable, adjust in increments of 0.001
+    ret.lateralTuning.pid.kf = 0.0001
+    ret.steerRateCost = 0.5
+    ret.steerActuatorDelay = 0.0 
     ret.enableGasInterceptor = 0x201 in fingerprint[0]
     if ret.enableGasInterceptor:
       ret.openpilotLongitudinalControl = True
