@@ -10,6 +10,7 @@ class LatControlPID(LatControl):
     super().__init__(CP, CI)
     self.pid = PIDController((CP.lateralTuning.pid.kpBP, CP.lateralTuning.pid.kpV),
                             (CP.lateralTuning.pid.kiBP, CP.lateralTuning.pid.kiV),
+                            k_d=(CP.lateralTuning.pid.kdBP, CP.lateralTuning.pid.kdV),
                             k_f=CP.lateralTuning.pid.kf, pos_limit=1.0, neg_limit=-1.0)
     self.get_steer_feedforward = CI.get_steer_feedforward_function()
 
@@ -44,6 +45,7 @@ class LatControlPID(LatControl):
       pid_log.active = True
       pid_log.p = self.pid.p
       pid_log.i = self.pid.i
+      pid_log.d = self.pid.d
       pid_log.f = self.pid.f
       pid_log.output = output_steer
       pid_log.saturated = self._check_saturation(self.steer_max - abs(output_steer) < 1e-3, CS)
