@@ -1,6 +1,10 @@
 from cereal import car
 from common.numpy_fast import clip, interp
 from common.realtime import DT_CTRL
+<<<<<<< HEAD
+=======
+from selfdrive.controls.lib.pid import PIDController
+>>>>>>> 0089d27f2... PID internal derivative gain; custom ff fits; split kf
 from selfdrive.controls.lib.drive_helpers import CONTROL_N
 from selfdrive.controls.lib.pid import PIDController
 from selfdrive.modeld.constants import T_IDXS
@@ -56,6 +60,10 @@ class LongControl:
     self.long_control_state = LongCtrlState.off  # initialized to off
     self.pid = PIDController((CP.longitudinalTuning.kpBP, CP.longitudinalTuning.kpV),
                              (CP.longitudinalTuning.kiBP, CP.longitudinalTuning.kiV),
+<<<<<<< HEAD
+=======
+                             k_d=(CP.longitudinalTuning.kdBP, CP.longitudinalTuning.kdV),
+>>>>>>> 0089d27f2... PID internal derivative gain; custom ff fits; split kf
                              k_f=CP.longitudinalTuning.kf, rate=1 / DT_CTRL)
     self.v_pid = 0.0
     self.last_output_accel = 0.0

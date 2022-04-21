@@ -14,6 +14,11 @@ ButtonType = car.CarState.ButtonEvent.Type
 EventName = car.CarEvent.EventName
 GearShifter = car.CarState.GearShifter
 
+def get_steer_feedforward_sigmoid(desired_angle, v_ego, ANGLE, ANGLE_OFFSET, SIGMOID_SPEED, SIGMOID, SPEED):
+  x = ANGLE * (desired_angle + ANGLE_OFFSET)
+  sigmoid = x / (1 + fabs(x))
+  return (SIGMOID_SPEED * sigmoid * v_ego) + (SIGMOID * sigmoid) + (SPEED * v_ego)
+  
 class CarInterface(CarInterfaceBase):
   using_new_pedal_transform = False
   
@@ -21,25 +26,64 @@ class CarInterface(CarInterfaceBase):
   def get_pid_accel_limits(CP, current_speed, cruise_speed):
     params = CarControllerParams()
     return params.ACCEL_MIN, params.ACCEL_MAX
-
+  
   # Determined by iteratively plotting and minimizing error for f(angle, speed) = steer.
   @staticmethod
   def get_steer_feedforward_volt(desired_angle, v_ego):
-    desired_angle *= 0.02904609
-    sigmoid = desired_angle / (1 + fabs(desired_angle))
-    return 0.10006696 * sigmoid * (v_ego + 3.12485927)
+    ANGLE = 0.03093722278106523
+    ANGLE_OFFSET = 0.46341000035928637
+    SIGMOID_SPEED = 0.07928458395144745
+    SIGMOID = 0.4983180128530419
+    SPEED = -0.0024896011696167266
+    return get_steer_feedforward_sigmoid(desired_angle, v_ego, ANGLE, ANGLE_OFFSET, SIGMOID_SPEED, SIGMOID, SPEED)
 
   @staticmethod
   def get_steer_feedforward_acadia(desired_angle, v_ego):
-    desired_angle *= 0.09760208
-    sigmoid = desired_angle / (1 + fabs(desired_angle))
-    return 0.04689655 * sigmoid * (v_ego + 10.028217)
+    ANGLE = 0.1314029550298617
+    ANGLE_OFFSET = 0.8317776927522815
+    SIGMOID_SPEED = 0.03820691400292691
+    SIGMOID = 0.3785405719285944
+    SPEED = -0.0010868615264700465
+    return get_steer_feedforward_sigmoid(desired_angle, v_ego, ANGLE, ANGLE_OFFSET, SIGMOID_SPEED, SIGMOID, SPEED)
+
+  @staticmethod
+  def get_steer_feedforward_bolt_euv(desired_angle, v_ego):
+    ANGLE = 0.0758345580739845
+    ANGLE_OFFSET = 0.31396926577596984
+    SIGMOID_SPEED = 0.04367532050459129
+    SIGMOID = 0.43144116109994846
+    SPEED = -0.002654134623368279
+    return get_steer_feedforward_sigmoid(desired_angle, v_ego, ANGLE, ANGLE_OFFSET, SIGMOID_SPEED, SIGMOID, SPEED)
+  
+  @staticmethod
+  def get_steer_feedforward_bolt(desired_angle, v_ego):
+    ANGLE = 0.06370624896135679
+    ANGLE_OFFSET = 0.32536345911579184
+    SIGMOID_SPEED = 0.06479105208670367
+    SIGMOID = 0.34485246691603205
+    SPEED = -0.0010645479469461995
+    return get_steer_feedforward_sigmoid(desired_angle, v_ego, ANGLE, ANGLE_OFFSET, SIGMOID_SPEED, SIGMOID, SPEED)
+  
+  @staticmethod
+  def get_steer_feedforward_silverado(desired_angle, v_ego):
+    ANGLE = 0.06539361463056717
+    ANGLE_OFFSET = -0.8390269362439537
+    SIGMOID_SPEED = 0.023681877712247515
+    SIGMOID = 0.5709779025308087
+    SPEED = -0.0016656455765509301
+    return get_steer_feedforward_sigmoid(desired_angle, v_ego, ANGLE, ANGLE_OFFSET, SIGMOID_SPEED, SIGMOID, SPEED)
 
   def get_steer_feedforward_function(self):
-    if self.CP.carFingerprint == CAR.VOLT:
+    if self.CP.carFingerprint == CAR.VOLT or self.CP.carFingerprint == CAR.VOLT_NR:
       return self.get_steer_feedforward_volt
     elif self.CP.carFingerprint == CAR.ACADIA:
       return self.get_steer_feedforward_acadia
+    elif self.CP.carFingerprint == CAR.BOLT_EUV:
+      return self.get_steer_feedforward_bolt_euv
+    elif self.CP.carFingerprint == CAR.BOLT_NR:
+      return self.get_steer_feedforward_bolt
+    elif self.CP.carFingerprint == CAR.SILVERADO_NR:
+      return self.get_steer_feedforward_silverado
     else:
       return CarInterfaceBase.get_steer_feedforward_default
 
@@ -83,8 +127,10 @@ class CarInterface(CarInterfaceBase):
 
     # Start with a baseline lateral tuning for all GM vehicles. Override tuning as needed in each model section below.
     ret.minSteerSpeed = 7 * CV.MPH_TO_MS
-    ret.lateralTuning.pid.kiBP, ret.lateralTuning.pid.kpBP = [[0.], [0.]]
-    ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.2], [0.00]]
+    ret.lateralTuning.pid.kpBP = [0.]
+    ret.lateralTuning.pid.kpV = [0.2]
+    ret.lateralTuning.pid.kiBP = [0.]
+    ret.lateralTuning.pid.kiV = [0.00]
     ret.lateralTuning.pid.kf = 0.00004   # full torque for 20 deg at 80mph means 0.00007818594
     ret.steerRateCost = 0.5
     ret.steerActuatorDelay = 0.1  # Default delay, not measured yet
@@ -113,15 +159,18 @@ class CarInterface(CarInterfaceBase):
       ret.mass = 1607. + STD_CARGO_KG
       ret.wheelbase = 2.69
       ret.steerRatio = 17.7  # Stock 15.7, LiveParameters
+      ret.steerRateCost = 1.0
       tire_stiffness_factor = 0.469 # Stock Michelin Energy Saver A/S, LiveParameters
       ret.steerRatioRear = 0.
-      ret.centerToFront = ret.wheelbase * 0.45 # Volt Gen 1, TODO corner weigh
+      ret.centerToFront = 0.45 * ret.wheelbase # from Volt Gen 1
 
       ret.lateralTuning.pid.kpBP = [0., 40.]
-      ret.lateralTuning.pid.kpV = [0., 0.17]
+      ret.lateralTuning.pid.kpV = [0., .16]
       ret.lateralTuning.pid.kiBP = [0.]
-      ret.lateralTuning.pid.kiV = [0.]
-      ret.lateralTuning.pid.kf = 1. # get_steer_feedforward_volt()
+      ret.lateralTuning.pid.kiV = [.023]
+      ret.lateralTuning.pid.kdBP = [0.]
+      ret.lateralTuning.pid.kdV = [.6]
+      ret.lateralTuning.pid.kf = 1. # !!! ONLY for sigmoid feedforward !!!
       ret.steerActuatorDelay = 0.2
       
       if CarInterface.using_new_pedal_transform and ret.enableGasInterceptor:
@@ -137,6 +186,14 @@ class CarInterface(CarInterfaceBase):
         ret.vEgoStarting = 0.5  # Speed at which the car goes into starting state, when car starts requesting starting accel,
         # vEgoStarting needs to be > or == vEgoStopping to avoid state transition oscillation
         ret.stoppingControl = True
+      else:
+        # Only tuned to reduce oscillations. TODO.
+        ret.longitudinalTuning.kpBP = [5., 15., 35.]
+        ret.longitudinalTuning.kpV = [1.25, 1.6, 1.3]
+        ret.longitudinalTuning.kiBP = [5., 15., 35.]
+        ret.longitudinalTuning.kiV = [0.18, 0.31, 0.34]
+        ret.longitudinalTuning.kdBP = [5., 25.]
+        ret.longitudinalTuning.kdV = [0.6, 0.0]
 
 
     elif candidate == CAR.MALIBU or candidate == CAR.MALIBU_NR:
@@ -188,8 +245,10 @@ class CarInterface(CarInterfaceBase):
       ret.wheelbase = 3.302
       ret.steerRatio = 17.3
       ret.centerToFront = ret.wheelbase * 0.49
-      ret.lateralTuning.pid.kiBP, ret.lateralTuning.pid.kpBP = [[10., 41.0], [10., 41.0]]
-      ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.13, 0.24], [0.01, 0.02]]
+      ret.lateralTuning.pid.kpBP = [10., 41.0]
+      ret.lateralTuning.pid.kpV = [0.13, 0.24]
+      ret.lateralTuning.pid.kiBP = [10., 41.0]
+      ret.lateralTuning.pid.kiV = [0.01, 0.02]
       ret.lateralTuning.pid.kf = 0.000045
       tire_stiffness_factor = 1.0
 
@@ -290,6 +349,49 @@ class CarInterface(CarInterfaceBase):
       ret.centerToFront = ret.wheelbase * .49
       ret.steerRateCost = .4
       ret.steerActuatorDelay = 0.11
+      ret.lateralTuning.pid.kpBP = [15., 31.]
+      ret.lateralTuning.pid.kpV = [0.10, 0.16]
+      ret.lateralTuning.pid.kiBP = [0., 31.]
+      ret.lateralTuning.pid.kiV = [0.0001, 0.0002]
+      ret.lateralTuning.pid.kdBP = [0.]
+      ret.lateralTuning.pid.kdV = [0.01]
+      ret.lateralTuning.pid.kf = .65 # when turning right. use with get_steer_feedforward_silverado()
+      ret.lateralTuning.pid.kfLeft = .4 #  when turning left. use with get_steer_feedforward_silverado()
+
+    elif candidate == CAR.SUBURBAN:
+      ret.minEnableSpeed = -1. # engage speed is decided by pcmFalse
+      ret.minSteerSpeed = -1 * CV.MPH_TO_MS
+      ret.mass = 2731. + STD_CARGO_KG
+      ret.wheelbase = 3.302
+      ret.steerRatio = 17.3 # COPIED FROM SILVERADO
+      ret.centerToFront = ret.wheelbase * 0.49
+      ret.steerActuatorDelay = 0.075
+      ret.pcmCruise = True # TODO: see if this resolves cruiseMismatch
+      ret.openpilotLongitudinalControl = False # ASCM vehicles use OP for long
+      ret.radarOffCan = True # ASCM vehicles (typically) have radar
+
+      # According to JYoung, decrease MAX_LAT_ACCEL if it is understeering
+      # friction may need to be increased slowly as well
+      # I'm not sure what to do about centering / wandering
+      MAX_LAT_ACCEL = 2.5
+      ret.lateralTuning.init('torque')
+      ret.lateralTuning.torque.useSteeringAngle = True
+      ret.lateralTuning.torque.kp = 2.0 / MAX_LAT_ACCEL
+      ret.lateralTuning.torque.kf = 1.0 / MAX_LAT_ACCEL
+      ret.lateralTuning.torque.ki = 0.50 / MAX_LAT_ACCEL
+      ret.lateralTuning.torque.friction = 0.1
+
+    elif candidate == CAR.SILVERADO_NR:
+      # Thanks skip for the tune!
+      ret.minEnableSpeed = -1.
+      ret.minSteerSpeed = -1 * CV.MPH_TO_MS
+      ret.mass = 2400. + STD_CARGO_KG
+      ret.wheelbase = 3.745
+      ret.steerRatio = 16.3
+      ret.pcmCruise = True # TODO: see if this resolves cruiseMismatch
+      ret.centerToFront = ret.wheelbase * .49
+      ret.steerRateCost = .4
+      ret.steerActuatorDelay = 0.11
       # ret.lateralTuning.pid.kpBP = [i * CV.MPH_TO_MS for i in [15., 80.]]
       # ret.lateralTuning.pid.kpV = [0.13, 0.23]
 
@@ -350,11 +452,11 @@ class CarInterface(CarInterfaceBase):
       # still working on improving lateral
       ret.steerRateCost = 0.5
       ret.steerActuatorDelay = 0.
-      ret.lateralTuning.pid.kpBP, ret.lateralTuning.pid.kiBP = [[10., 41.0], [10., 41.0]]
-      ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.18, 0.275], [0.01, 0.021]]
-      ret.lateralTuning.pid.kf = 0.0002
-      # ret.steerMaxBP = [10., 25.]
-      # ret.steerMaxV = [1., 1.2]
+      ret.lateralTuning.pid.kpBP, ret.lateralTuning.pid.kiBP = [[10., 40.0], [0., 40.]]
+      ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.1, 0.22], [0.01, 0.021]]
+      ret.lateralTuning.pid.kdBP = [0.]
+      ret.lateralTuning.pid.kdV = [0.6]
+      ret.lateralTuning.pid.kf = 1. # use with get_feedforward_bolt_euv
       ret.pcmCruise = True # TODO: see if this resolves cruiseMismatch
       ret.openpilotLongitudinalControl = False # Using Stock ACC
       ret.radarOffCan = True # No Radar
