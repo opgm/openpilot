@@ -187,7 +187,7 @@ class CarInterface(CarInterfaceBase):
       ret.steerActuatorDelay = 0.
       ret.lateralTuning.pid.kpBP, ret.lateralTuning.pid.kiBP = [[10., 41.0], [10., 41.0]]
       ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.18, 0.26], [0.01, 0.02]]
-      ret.lateralTuning.pid.kf = 0.0001
+      ret.lateralTuning.pid.kf = 0.00007
       # No other car in the entire codebase touches these
       #ret.steerMaxBP = [10., 25.]
       #ret.steerMaxV = [1., 1.2]
@@ -195,7 +195,7 @@ class CarInterface(CarInterfaceBase):
       # TODO: Needs refinement for stop and go, doesn't fully stop
       # Assumes the Bolt is using L-Mode for regen braking
       ret.longitudinalTuning.kpBP = [0., 35.]
-      ret.longitudinalTuning.kpV = [0.15, 0.35] 
+      ret.longitudinalTuning.kpV = [0.12, 0.35] 
       ret.longitudinalTuning.kiBP = [0., 35.] 
       ret.longitudinalTuning.kiV = [0.22, 0.34]
       ret.stoppingDecelRate = 0.17  # reach stopping target smoothly, brake_travel/s while trying to stop
