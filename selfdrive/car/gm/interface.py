@@ -173,12 +173,15 @@ class CarInterface(CarInterfaceBase):
       ret.lateralTuning.pid.kf = 1. # !!! ONLY for sigmoid feedforward !!!
       ret.steerActuatorDelay = 0.2
       
-      if CarInterface.using_new_pedal_transform and ret.enableGasInterceptor:
+      if ret.enableGasInterceptor:
+        ret.minEnableSpeed = -1 * CV.MPH_TO_MS
         #Note: Low speed, stop and go not tested. Should be fairly smooth on highway
         ret.longitudinalTuning.kpBP = [0., 35.0]
         ret.longitudinalTuning.kpV = [0.4, 0.06] 
         ret.longitudinalTuning.kiBP = [0., 35.0] 
         ret.longitudinalTuning.kiV = [0.0, 0.04]
+        ret.longitudinalTuning.kdBP = [5., 25.]
+        ret.longitudinalTuning.kdV = [0.6, 0.0]
         ret.longitudinalTuning.kf = 0.25
         ret.stoppingDecelRate = 0.8  # reach stopping target smoothly, brake_travel/s while trying to stop
         ret.stopAccel = 0. # Required acceleraton to keep vehicle stationary
