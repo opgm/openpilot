@@ -1,7 +1,6 @@
 import math
 
 from selfdrive.controls.lib.pid import PIDController
-from selfdrive.controls.lib.drive_helpers import get_steer_max
 from selfdrive.controls.lib.latcontrol import LatControl, MIN_STEER_SPEED
 from cereal import log
 from selfdrive.controls.lib.latcontrol import LatControl, MIN_STEER_SPEED
