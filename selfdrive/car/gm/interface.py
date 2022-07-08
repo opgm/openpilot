@@ -136,6 +136,8 @@ class CarInterface(CarInterfaceBase):
 
       if ret.enableGasInterceptor:
         ret.minEnableSpeed = -1
+        ret.longitudinalActuatorDelayLowerBound = 0.06
+        ret.longitudinalActuatorDelayUpperBound = 0.08
         #Note: Low speed, stop and go not tested. Should be fairly smooth on highway
         ret.longitudinalTuning.kpBP = [0., 35.0]
         ret.longitudinalTuning.kpV = [0.4, 0.06] 
