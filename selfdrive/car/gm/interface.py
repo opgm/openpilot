@@ -158,7 +158,8 @@ class CarInterface(CarInterfaceBase):
 
     if candidate == CAR.VOLT or candidate == CAR.VOLT_NR:
       # supports stop and go, but initial engage must be above 18mph (which include conservatism)
-      ret.minEnableSpeed = 18 * CV.MPH_TO_MS
+      ret.minEnableSpeed = -1 * CV.MPH_TO_MS
+      ret.openpilotLongitudinalControl = True
       ret.mass = 1607. + STD_CARGO_KG
       ret.wheelbase = 2.69
       ret.steerRatio = 17.7  # Stock 15.7, LiveParameters
