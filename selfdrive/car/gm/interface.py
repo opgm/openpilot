@@ -88,6 +88,11 @@ class CarInterface(CarInterfaceBase):
     ret.safetyConfigs = [get_safety_config(car.CarParams.SafetyModel.gm)]
     ret.autoResumeSng = False
 
+    ret.enableGasInterceptor = 0x201 in fingerprint[0]
+    if ret.enableGasInterceptor:
+      ret.openpilotLongitudinalControl = True
+      ret.pcmCruise = False
+
     if candidate in EV_CAR:
       ret.transmissionType = TransmissionType.direct
     else:
@@ -241,6 +246,23 @@ class CarInterface(CarInterfaceBase):
       ret.centerToFront = ret.wheelbase * 0.4
       CarInterfaceBase.configure_torque_tune(candidate, ret.lateralTuning)
 
+    if ret.enableGasInterceptor:
+      ret.safetyConfigs[0].safetyParam |= Panda.FLAG_GM_HW_CAM_CC
+      ret.minEnableSpeed = -1
+      ret.pcmCruise = False
+      # Note: Low speed, stop and go not tested. Should be fairly smooth on highway
+      ret.longitudinalTuning.kpV = [0.4, 0.06]
+      ret.longitudinalTuning.kiBP = [0., 35.0]
+      ret.longitudinalTuning.kiV = [0.0, 0.04]
+      ret.longitudinalTuning.kiV = [0.0, 0.04]
+      ret.longitudinalTuning.kf = 0.3
+      ret.stoppingDecelRate = 0.8  # reach stopping target smoothly, brake_travel/s while trying to stop
+      ret.stopAccel = 0.  # Required acceleration to keep vehicle stationary
+      ret.vEgoStopping = 0.5  # Speed at which the car goes into stopping state, when car starts requesting stopping accel
+      ret.vEgoStarting = 0.5  # Speed at which the car goes into starting state, when car starts requesting starting accel,
+      # vEgoStarting needs to be > or == vEgoStopping to avoid state transition oscillation
+      ret.stoppingControl = True
+
     # TODO: start from empirically derived lateral slip stiffness for the civic and scale by
     # mass and CG position, so all cars will have approximately similar dyn behaviors
     ret.tireStiffnessFront, ret.tireStiffnessRear = scale_tire_stiffness(ret.mass, ret.wheelbase, ret.centerToFront,
@@ -278,6 +300,8 @@ class CarInterface(CarInterfaceBase):
       events.add(EventName.resumeRequired)
     if ret.vEgo < self.CP.minSteerSpeed:
       events.add(EventName.belowSteerSpeed)
+    if self.CP.enableGasInterceptor and ret.gearShifter not in (GearShifter.park, GearShifter.low):
+      events.add(EventName.brakeUnavailable)
 
     ret.events = events.to_msg()
 
