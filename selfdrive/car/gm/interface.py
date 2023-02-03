@@ -150,7 +150,7 @@ class CarInterface(CarInterfaceBase):
     ret.steerLimitTimer = 0.4
     ret.radarTimeStep = 0.0667  # GM radar runs at 15Hz instead of standard 20Hz
 
-    if candidate == CAR.VOLT:
+    if candidate in (CAR.VOLT, CAR.VOLT_CC):
       ret.mass = 1607. + STD_CARGO_KG
       ret.wheelbase = 2.69
       ret.steerRatio = 17.7  # Stock 15.7, LiveParameters
@@ -217,7 +217,7 @@ class CarInterface(CarInterfaceBase):
       ret.lateralTuning.pid.kf = 0.000045
       tire_stiffness_factor = 1.0
 
-    elif candidate == CAR.BOLT_EUV:
+    elif candidate in (CAR.BOLT_EUV, CAR.BOLT_CC):
       ret.mass = 1669. + STD_CARGO_KG
       ret.wheelbase = 2.63779
       ret.steerRatio = 16.8
