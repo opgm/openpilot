@@ -53,7 +53,7 @@ class CarController:
     # Steering (Active: 50Hz, inactive: 10Hz)
     steer_step = self.params.STEER_STEP if CC.latActive else self.params.INACTIVE_STEER_STEP
 
-    if self.CP.networkLocation == NetworkLocation.fwdCamera and self.CP.carFingerprint not in CC_ONLY_CAR:
+    if self.CP.networkLocation == NetworkLocation.fwdCamera:
       # Also send at 50Hz:
       # - on startup, first few msgs are blocked
       # - until we're in sync with camera so counters align when relay closes, preventing a fault.

@@ -38,7 +38,7 @@ class CarState(CarStateBase):
     # Variables used for avoiding LKAS faults
     self.loopback_lka_steering_cmd_updated = len(loopback_cp.vl_all["ASCMLKASteeringCmd"]["RollingCounter"]) > 0
     self.loopback_lka_steering_cmd_ts_nanos = loopback_cp.ts_nanos["ASCMLKASteeringCmd"]["RollingCounter"]
-    if self.CP.networkLocation == NetworkLocation.fwdCamera and self.CP.carFingerprint not in CC_ONLY_CAR:
+    if self.CP.networkLocation == NetworkLocation.fwdCamera:
       self.pt_lka_steering_cmd_counter = pt_cp.vl["ASCMLKASteeringCmd"]["RollingCounter"]
       self.cam_lka_steering_cmd_counter = cam_cp.vl["ASCMLKASteeringCmd"]["RollingCounter"]
 
@@ -124,7 +124,7 @@ class CarState(CarStateBase):
   def get_cam_can_parser(CP):
     signals = []
     checks = []
-    if CP.networkLocation == NetworkLocation.fwdCamera and CP.carFingerprint not in CC_ONLY_CAR:
+    if CP.networkLocation == NetworkLocation.fwdCamera:
       signals += [
         ("AEBCmdActive", "AEBCmd"),
         ("RollingCounter", "ASCMLKASteeringCmd"),
@@ -197,7 +197,7 @@ class CarState(CarStateBase):
     ]
 
     # Used to read back last counter sent to PT by camera
-    if CP.networkLocation == NetworkLocation.fwdCamera and CP.carFingerprint not in CC_ONLY_CAR:
+    if CP.networkLocation == NetworkLocation.fwdCamera:
       signals += [
         ("RollingCounter", "ASCMLKASteeringCmd"),
       ]
