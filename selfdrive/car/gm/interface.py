@@ -297,7 +297,7 @@ class CarInterface(CarInterfaceBase):
       events.add(EventName.resumeRequired)
     if ret.vEgo < self.CP.minSteerSpeed:
       events.add(EventName.belowSteerSpeed)
-    if self.CP.enableGasInterceptor and ret.gearShifter not in (GearShifter.park, GearShifter.low, GearShifter.brake):
+    if not self.params_.get_bool('SinglePedalMode') and self.CP.enableGasInterceptor and ret.gearShifter not in (GearShifter.park, GearShifter.low, GearShifter.brake):
       events.add(EventName.brakeUnavailable)
 
     ret.events = events.to_msg()
