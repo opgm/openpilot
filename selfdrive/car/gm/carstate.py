@@ -128,14 +128,19 @@ class CarState(CarStateBase):
       signals += [
         ("AEBCmdActive", "AEBCmd"),
         ("RollingCounter", "ASCMLKASteeringCmd"),
-        ("ACCSpeedSetpoint", "ASCMActiveCruiseControlStatus"),
-        ("ACCCruiseState", "ASCMActiveCruiseControlStatus"),
       ]
       checks += [
         ("AEBCmd", 10),
         ("ASCMLKASteeringCmd", 10),
-        ("ASCMActiveCruiseControlStatus", 25),
       ]
+      if CP.carFingerprint not in CC_ONLY_CAR:
+        signals += [
+          ("ACCSpeedSetpoint", "ASCMActiveCruiseControlStatus"),
+          ("ACCCruiseState", "ASCMActiveCruiseControlStatus"),
+        ]
+        checks += [
+          ("ASCMActiveCruiseControlStatus", 25),
+        ]
 
     return CANParser(DBC[CP.carFingerprint]["pt"], signals, checks, CanBus.CAMERA)
 
