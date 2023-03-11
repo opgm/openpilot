@@ -77,8 +77,7 @@ class CarState(CarStateBase):
     # Regen braking is braking
     if self.CP.transmissionType == TransmissionType.direct:
       ret.regenBraking = pt_cp.vl["EBCMRegenPaddle"]["RegenPaddle"] != 0
-      self.single_pedal_mode = ret.gearShifter == GearShifter.low or \
-                               pt_cp.vl["EVDriveMode"].get("SinglePedalModeActive") == 1
+      self.single_pedal_mode = ret.gearShifter == GearShifter.low or pt_cp.vl["EVDriveMode"]["SinglePedalModeActive"] == 1
 
     if self.CP.enableGasInterceptor:
       ret.gas = (pt_cp.vl["GAS_SENSOR"]["INTERCEPTOR_GAS"] + pt_cp.vl["GAS_SENSOR"]["INTERCEPTOR_GAS2"]) / 2.
@@ -139,12 +138,10 @@ class CarState(CarStateBase):
       signals += [
         ("AEBCmdActive", "AEBCmd"),
         ("RollingCounter", "ASCMLKASteeringCmd"),
-        ("SinglePedalModeActive", "EVDriveMode"),
       ]
       checks += [
         ("AEBCmd", 10),
         ("ASCMLKASteeringCmd", 10),
-        ("EVDriveMode", 5),
       ]
       if CP.carFingerprint not in CC_ONLY_CAR:
         signals += [
@@ -218,9 +215,11 @@ class CarState(CarStateBase):
     if CP.networkLocation == NetworkLocation.fwdCamera:
       signals += [
         ("RollingCounter", "ASCMLKASteeringCmd"),
+        ("SinglePedalModeActive", "EVDriveMode"),
       ]
       checks += [
         ("ASCMLKASteeringCmd", 0),
+        ("EVDriveMode", 0),
       ]
 
     if CP.transmissionType == TransmissionType.direct:
