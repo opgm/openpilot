@@ -3,7 +3,6 @@ import math
 from cereal import car
 from common.conversions import Conversions as CV
 from common.numpy_fast import interp, clip
-from common.params import Params
 from common.realtime import DT_CTRL
 from opendbc.can.packer import CANPacker
 from selfdrive.car import apply_std_steer_torque_limits, create_gas_interceptor_command
@@ -56,7 +55,6 @@ class CarController:
     self.lka_icon_status_last = (False, False)
 
     self.params = CarControllerParams(self.CP)
-    self.params_ = Params()
 
     self.packer_pt = CANPacker(DBC[self.CP.carFingerprint]['pt'])
     self.packer_obj = CANPacker(DBC[self.CP.carFingerprint]['radar'])
@@ -122,7 +120,6 @@ class CarController:
         # BEGIN INTERCEPTOR ############################
         if CS.CP.enableGasInterceptor:
           singlePedalMode = CS.out.gearShifter == GearShifter.low and self.CP.transmissionType == TransmissionType.direct
-          singlePedalMode |= self.params_.get_bool("SinglePedalMode")
           # TODO: JJS Detect saturated battery?
           if singlePedalMode:
             # In L Mode, Pedal applies regen at a fixed coast-point (TODO: max regen in L mode may be different per car)
