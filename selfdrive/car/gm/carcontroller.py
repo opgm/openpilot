@@ -119,9 +119,8 @@ class CarController:
 
         # BEGIN INTERCEPTOR ############################
         if CS.CP.enableGasInterceptor:
-          singlePedalMode = CS.out.gearShifter == GearShifter.low and self.CP.transmissionType == TransmissionType.direct
           # TODO: JJS Detect saturated battery?
-          if singlePedalMode:
+          if CS.singlePedalMode:
             # In L Mode, Pedal applies regen at a fixed coast-point (TODO: max regen in L mode may be different per car)
             # This will apply to EVs in L mode.
             # accel values below zero down to a cutoff point
