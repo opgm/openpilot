@@ -126,7 +126,7 @@ class CarController:
             # accel values below zero down to a cutoff point
             #  that approximates the percentage of braking regen can handle should be scaled between 0 and the coast-point
             # accell values below this point will need to be add-on future hijacked AEB
-            # TODO: Determine (or guess) at regen precentage
+            # TODO: Determine (or guess) at regen percentage
 
             # From Felger's Bolt Fort
             # It seems in L mode, accel / decel point is around 1/5
