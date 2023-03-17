@@ -117,6 +117,8 @@ class CarState(CarStateBase):
       # openpilot controls nonAdaptive when not pcmCruise
       if self.CP.pcmCruise:
         ret.cruiseState.nonAdaptive = cam_cp.vl["ASCMActiveCruiseControlStatus"]["ACCCruiseState"] not in (2, 3)
+    if self.CP.networkLocation == NetworkLocation.fwdCamera and self.CP.carFingerprint in CC_ONLY_CAR:
+      ret.cruiseState.speed = (pt_cp.vl["ECMCruiseControl"]["CruiseSetSpeed"]) * CV.KPH_TO_MS
 
     return ret
 
@@ -219,6 +221,8 @@ class CarState(CarStateBase):
       signals.append(("BrakePedalPosition", "EBCMBrakePedalPosition"))
       checks.remove(("ECMAcceleratorPos", 80))
       checks.append(("EBCMBrakePedalPosition", 100))
+      signals.append(("CruiseSetSpeed", "ECMCruiseControl"))
+      checks.append(("ECMCruiseControl", 10))
 
     return CANParser(DBC[CP.carFingerprint]["pt"], signals, checks, CanBus.POWERTRAIN)
 
