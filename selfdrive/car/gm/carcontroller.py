@@ -107,15 +107,17 @@ class CarController:
           speedDiff = (speedActuator - speedSetPoint)
 
           # We will spam the up/down buttons till we reach the desired speed
-          if speedDiff > 0:
-            cruiseBtn = CruiseButtons.RES_ACCEL
-          elif speedDiff < 0:
+          rate = 0.64
+          if speedDiff < 0:
             cruiseBtn = CruiseButtons.DECEL_SET
+            rate = 0.2
+          elif speedDiff > 0:
+            cruiseBtn = CruiseButtons.RES_ACCEL
 
           # Check rlogs closely - our message shouldn't show up on the pt bus for us
           # Or bus 2, since we're forwarding... but I think it does
           # TODO: Cleanup the timing - normal is every 30ms...
-          if (cruiseBtn != CruiseButtons.INIT) and ((self.frame - self.last_button_frame) * DT_CTRL > 0.63):
+          if (cruiseBtn != CruiseButtons.INIT) and ((self.frame - self.last_button_frame) * DT_CTRL > rate):
             self.last_button_frame = self.frame
             can_sends.append(gmcan.create_buttons(self.packer_pt, CanBus.POWERTRAIN, CS.buttons_counter, cruiseBtn))
             # END CC-ACC #######
