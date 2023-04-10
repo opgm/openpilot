@@ -77,7 +77,7 @@ class CarInterface(CarInterfaceBase):
     return (steer_torque + friction) / (steer_correction_factor * vego_correction_factor)
 
   def torque_from_lateral_accel(self) -> TorqueFromLateralAccelCallbackType:
-    if self.CP.carFingerprint == CAR.BOLT_EUV:
+    if self.CP.carFingerprint in (CAR.BOLT_EUV, CAR.BOLT_CC):
       return self.torque_from_lateral_accel_bolt
     else:
       return self.torque_from_lateral_accel_linear
