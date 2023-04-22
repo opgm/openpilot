@@ -1,4 +1,7 @@
 import copy
+
+import math
+
 from cereal import car
 from common.conversions import Conversions as CV
 from common.numpy_fast import mean
@@ -11,6 +14,7 @@ TransmissionType = car.CarParams.TransmissionType
 NetworkLocation = car.CarParams.NetworkLocation
 GearShifter = car.CarState.GearShifter
 STANDSTILL_THRESHOLD = 10 * 0.0311 * CV.KPH_TO_MS
+PEDAL_HYST_GAP = 0.01
 
 
 class CarState(CarStateBase):
@@ -27,6 +31,7 @@ class CarState(CarStateBase):
     self.cam_lka_steering_cmd_counter = 0
     self.buttons_counter = 0
     self.single_pedal_mode = False
+    self.pedal_steady = 0.
 
   def update(self, pt_cp, cam_cp, loopback_cp):
     ret = car.CarState.new_message()
@@ -250,3 +255,16 @@ class CarState(CarStateBase):
     ]
 
     return CANParser(DBC[CP.carFingerprint]["pt"], signals, checks, CanBus.LOOPBACK, enforce_checks=False)
+
+  @staticmethod
+  def actuator_hystereses(final_pedal, pedal_steady):
+    """for small pedal oscillations within pedal_hyst_gap, don't change the pedal command"""
+    if math.isclose(final_pedal, 0.0):
+      pedal_steady = 0.
+    elif final_pedal > pedal_steady + PEDAL_HYST_GAP:
+      pedal_steady = final_pedal - PEDAL_HYST_GAP
+    elif final_pedal < pedal_steady - PEDAL_HYST_GAP:
+      pedal_steady = final_pedal + PEDAL_HYST_GAP
+    final_pedal = pedal_steady
+
+    return final_pedal, pedal_steady

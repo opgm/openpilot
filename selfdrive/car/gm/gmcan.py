@@ -1,4 +1,6 @@
-from selfdrive.car import make_can_msg
+from common.numpy_fast import clip
+from selfdrive.car import make_can_msg, create_gas_interceptor_command
+from selfdrive.car.gm.carstate import CarState
 from selfdrive.car.gm.values import CAR
 
 
@@ -161,3 +163,41 @@ def create_lka_icon_command(bus, active, critical, steer):
   else:
     dat = b"\x00\x00\x00"
   return make_can_msg(0x104c006c, dat, bus)
+
+
+def create_gm_pedal_interceptor_command(packer, CS: CarState, CC, actuators, idx):
+  # TODO: JJS Detect saturated battery?
+  if CS.single_pedal_mode:
+    # In L Mode, Pedal applies regen at a fixed coast-point (TODO: max regen in L mode may be different per car)
+    # This will apply to EVs in L mode.
+    # accel values below zero down to a cutoff point
+    #  that approximates the percentage of braking regen can handle should be scaled between 0 and the coast-point
+    # accel values below this point will need to be add-on future hijacked AEB
+    # TODO: Determine (or guess) at regen percentage
+
+    # From Felger's Bolt Fort
+    # It seems in L mode, accel / decel point is around 1/5
+    # -1-------AEB------0----regen---0.15-------accel----------+1
+    # Shrink gas request to 0.85, have it start at 0.2
+    # Shrink brake request to 0.85, first 0.15 gives regen, rest gives AEB
+
+    zero = 0.15625  # 40/256
+
+    if actuators.accel > 0.:
+      # Scales the accel from 0-1 to 0.156-1
+      pedal_gas = clip(((1 - zero) * actuators.accel + zero), 0., 1.)
+    else:
+      # if accel is negative, -0.1 -> 0.015625
+      pedal_gas = clip(zero + actuators.accel, 0., zero)  # Make brake the same size as gas, but clip to regen
+      # aeb = actuators.brake*(1-zero)-regen # For use later, braking more than regen
+  else:
+    pedal_gas = clip(actuators.accel, 0., 1.)
+
+  # apply pedal hysteresis and clip the final output to valid values.
+  pedal_final, CS.pedal_steady = CS.actuator_hystereses(pedal_gas, CS.pedal_steady)
+  pedal_gas = clip(pedal_final, 0., 1.)
+
+  if not CC.longActive:
+    pedal_gas = 0.0  # May not be needed with the enable param
+
+  return create_gas_interceptor_command(packer, pedal_gas, idx)
