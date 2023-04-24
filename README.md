@@ -1,3 +1,8 @@
+Ultimate Bolt is for 2017-2020 Bolts. 
+It uses Pid steering algorithm. Soon I will add a toggle to switch between Pid and Torque. 
+Based on opgm and stock openpilot.
+
+
 # OPGM - Wide compatibility openpilot port collection for GM Vehicles
 
 [![Chevy Equinox](https://img.youtube.com/vi/JzvtlIAAfkI/hqdefault.jpg)](http://www.youtube.com/watch?v=JzvtlIAAfkI "Step-by-step: Getting openpilot steering a 2020 Equinox")
