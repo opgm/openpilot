@@ -971,13 +971,22 @@ EVENTS: Dict[int, Dict[str, Union[Alert, AlertCallbackType]]] = {
       AlertStatus.normal, AlertSize.small,
       Priority.LOW, VisualAlert.none, AudibleAlert.none, 2.0),
   },
-  
+
   EventName.torqueNNFFNotLoaded: {
     ET.PERMANENT: Alert(
       "e2e NN torque controller not loaded.",
       "go donate logs to twilsonco to get loaded!",
       AlertStatus.userPrompt, AlertSize.mid,
       Priority.LOW, VisualAlert.none, AudibleAlert.prompt, 6.0),
+  },
+
+  EventName.pedalInterceptorNoBrake: {
+    ET.WARNING: Alert(
+      "Braking Unavailable",
+      "Shift to L",
+      AlertStatus.userPrompt, AlertSize.mid,
+      Priority.HIGH, VisualAlert.wrongGear, AudibleAlert.promptRepeat, 4.),
+    ET.NO_ENTRY: NoEntryAlert("Shift To L To Use Pedal Interceptor"),
   },
 }
 
