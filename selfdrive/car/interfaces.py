@@ -7,14 +7,15 @@ from difflib import SequenceMatcher
 from json import load
 from typing import Any, Dict, Optional, Tuple, List, Callable, Union
 
-from cereal import car
+from cereal import car, log
 from openpilot.common.basedir import BASEDIR
 from openpilot.common.conversions import Conversions as CV
 from openpilot.common.kalman.simple_kalman import KF1D, get_kalman_gain
 from openpilot.common.numpy_fast import clip
+from common.params import Params, put_bool_nonblocking, put_nonblocking
 from openpilot.common.realtime import DT_CTRL
 from openpilot.selfdrive.car import apply_hysteresis, gen_empty_fingerprint, scale_rot_inertia, scale_tire_stiffness, STD_CARGO_KG
-from openpilot.selfdrive.controls.lib.drive_helpers import V_CRUISE_MAX, get_friction
+from openpilot.selfdrive.controls.lib.drive_helpers import V_CRUISE_MAX, get_friction, CRUISE_LONG_PRESS
 from openpilot.selfdrive.controls.lib.events import Events
 from openpilot.selfdrive.controls.lib.vehicle_model import VehicleModel
 
@@ -83,10 +84,10 @@ class FluxModel:
       for k, v in self.activation_function_names.items():
         activation = activation.replace(k, v)
       self.layers.append((W, b, activation))
-    
+
     self.validate_layers()
     self.check_for_friction_override()
-    
+
   # Begin activation functions.
   # These are called by name using the keys in the model json file
   def sigmoid(self, x):
@@ -110,7 +111,7 @@ class FluxModel:
         input_array = input_array + [0] * (self.input_size - in_len)
       else:
         raise ValueError(f"Input array length {len(input_array)} must be length 2 or greater")
-        
+
     input_array = np.array(input_array, dtype=np.float32)
 
     # Rescale the input array using the input_mean and input_std
@@ -119,16 +120,16 @@ class FluxModel:
     output_array = self.forward(input_array)
 
     return float(output_array[0, 0])
-  
+
   def validate_layers(self):
     for W, b, activation in self.layers:
       if not hasattr(self, activation):
         raise ValueError(f"Unknown activation: {activation}")
-      
+
   def check_for_friction_override(self):
     y = self.evaluate([10.0, 0.0, 0.2])
     self.friction_override = (y < 0.1)
-  
+
 def get_nn_model_path(car, eps_firmware) -> Tuple[Union[str, None, float]]:
   def check_nn_path(check_model):
     model_path = None
@@ -141,7 +142,7 @@ def get_nn_model_path(car, eps_firmware) -> Tuple[Union[str, None, float]]:
           max_similarity = similarity_score
           model_path = os.path.join(TORQUE_NN_MODEL_PATH, f)
     return model_path, max_similarity
-  
+
   if len(eps_firmware) > 3:
     eps_firmware = eps_firmware.replace("\\", "")
     check_model = f"{car} {eps_firmware}"
@@ -154,7 +155,7 @@ def get_nn_model_path(car, eps_firmware) -> Tuple[Union[str, None, float]]:
     if 0.0 <= max_similarity < 0.9:
       model_path = None
   return model_path, max_similarity
-  
+
 def get_nn_model(car, eps_firmware) -> Tuple[Union[FluxModel, None, float]]:
   model, similarity_score = get_nn_model_path(car, eps_firmware)
   if model is not None:
@@ -195,7 +196,7 @@ class CarInterfaceBase(ABC):
 
   def get_ff_nn(self, x):
     return self.lat_torque_nn_model.evaluate(x)
-  
+
   def initialize_lat_torque_nn(self, car, eps_firmware):
     self.lat_torque_nn_model, _ = get_nn_model(car, eps_firmware)
     return (self.lat_torque_nn_model is not None)
@@ -215,7 +216,7 @@ class CarInterfaceBase(ABC):
   def get_params(cls, candidate: str, fingerprint: Dict[int, Dict[int, int]], car_fw: List[car.CarParams.CarFw], experimental_long: bool, docs: bool):
     ret = CarInterfaceBase.get_std_params(candidate)
     ret = cls._get_params(ret, candidate, fingerprint, car_fw, experimental_long, docs)
-    
+
     # Enable torque controller for all cars (except angle cars)
     if ret.steerControlType != car.CarParams.SteerControlType.angle:
       CarInterfaceBase.configure_torque_tune(candidate, ret.lateralTuning)
@@ -391,6 +392,7 @@ class CarInterfaceBase(ABC):
       events.add(EventName.steerOverride)
 
     # Handle button presses
+    distance_button_pressed = False
     for b in cs_out.buttonEvents:
       # Enable OP long on falling edge of enable buttons (defaults to accelCruise and decelCruise, overridable per-port)
       if not self.CP.pcmCruise and (b.type in enable_buttons and not b.pressed):
@@ -398,6 +400,10 @@ class CarInterfaceBase(ABC):
       # Disable on rising and falling edge of cancel for both stock and OP long
       if b.type == ButtonType.cancel:
         events.add(EventName.buttonCancel)
+      if b.type == ButtonType.gapAdjustCruise:
+        distance_button_pressed = True
+    if self.CP.openpilotLongitudinalControl:
+      self.CS.update_personality(distance_button_pressed)
 
     # Handle permanent and temporary steering faults
     self.steering_unpressed = 0 if cs_out.steeringPressed else self.steering_unpressed + 1
@@ -427,6 +433,12 @@ class CarInterfaceBase(ABC):
       elif not cs_out.cruiseState.enabled:
         events.add(EventName.pcmDisable)
 
+    if self.CS.personality_updated != -1:
+      personality_events = [EventName.personalityAggressive, EventName.personalityStandard, EventName.personalityRelaxed]
+      events.add(personality_events[self.CS.personality_updated])
+      self.CS.personality_updated = -1
+
+
     return events
 
 
@@ -448,8 +460,11 @@ class RadarInterfaceBase(ABC):
 class CarStateBase(ABC):
   def __init__(self, CP):
     self.CP = CP
+    self.params = Params()
     self.car_fingerprint = CP.carFingerprint
     self.out = car.CarState.new_message()
+
+    self.personality_updated = -1
 
     # PFEIFER - AOL {{
     self.lateral_allowed = False
@@ -471,6 +486,13 @@ class CarStateBase(ABC):
     x0=[[0.0], [0.0]]
     K = get_kalman_gain(DT_CTRL, np.array(A), np.array(C), np.array(Q), R)
     self.v_ego_kf = KF1D(x0=x0, A=A, C=C[0], K=K)
+
+    try:
+      self.longitudinal_personality = int(self.params.get("LongitudinalPersonality", encoding="utf-8"))
+    except (ValueError, TypeError):
+      self.longitudinal_personality = log.LongitudinalPersonality.standard
+    self.distance_button_pressed = False
+    self.distance_button_timer = 0
 
   def update_speed_kf(self, v_ego_raw):
     if abs(v_ego_raw - self.v_ego_kf.x[0][0]) > 2.0:  # Prevent large accelerations when car starts at non zero speed
@@ -525,6 +547,15 @@ class CarStateBase(ABC):
     self.right_blinker_prev = right_blinker_stalk
 
     return bool(left_blinker_stalk or self.left_blinker_cnt > 0), bool(right_blinker_stalk or self.right_blinker_cnt > 0)
+
+  def update_personality(self, distance_button_pressed: bool) -> None:
+    if self.distance_button_timer == CRUISE_LONG_PRESS:
+      put_bool_nonblocking("ExperimentalMode", not self.params.get_bool("ExperimentalMode"))
+    elif not distance_button_pressed and self.distance_button_timer > 0 and self.distance_button_timer < CRUISE_LONG_PRESS:  # falling edge
+      self.longitudinal_personality = (self.longitudinal_personality - 1) % 3
+      put_nonblocking("LongitudinalPersonality", str(self.longitudinal_personality))
+      self.personality_updated = self.longitudinal_personality
+    self.distance_button_timer = self.distance_button_timer + 1 if distance_button_pressed else 0
 
   @staticmethod
   def parse_gear_shifter(gear: Optional[str]) -> car.CarState.GearShifter:

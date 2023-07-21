@@ -122,6 +122,10 @@ struct CarEvent @0x9b1657f34caf3ad3 {
 
     pedalInterceptorNoBrake @121;
 
+    personalityRelaxed @122;
+    personalityStandard @123;
+    personalityAggressive @124;
+
     radarCanErrorDEPRECATED @15;
     communityFeatureDisallowedDEPRECATED @62;
     radarCommIssueDEPRECATED @67;

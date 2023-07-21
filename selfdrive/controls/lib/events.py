@@ -1000,6 +1000,30 @@ EVENTS: Dict[int, Dict[str, Union[Alert, AlertCallbackType]]] = {
       AlertStatus.userPrompt, AlertSize.mid,
       Priority.HIGH, VisualAlert.wrongGear, AudibleAlert.promptRepeat, 4.),
   },
+
+  EventName.personalityRelaxed: {
+    ET.PERMANENT: Alert(
+      "Relaxed",
+      "",
+      AlertStatus.normal, AlertSize.small,
+      Priority.LOW, VisualAlert.none, AudibleAlert.none, 2.0),
+  },
+
+  EventName.personalityStandard: {
+    ET.PERMANENT: Alert(
+      "Standard",
+      "",
+      AlertStatus.normal, AlertSize.small,
+      Priority.LOW, VisualAlert.none, AudibleAlert.none, 2.0),
+  },
+
+  EventName.personalityAggressive: {
+    ET.PERMANENT: Alert(
+      "Aggresive",
+      "",
+      AlertStatus.normal, AlertSize.small,
+      Priority.LOW, VisualAlert.none, AudibleAlert.none, 2.0),
+  },
 }
 
 
