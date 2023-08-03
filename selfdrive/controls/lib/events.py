@@ -964,6 +964,21 @@ EVENTS: Dict[int, Dict[str, Union[Alert, AlertCallbackType]]] = {
     ET.NO_ENTRY: NoEntryAlert("Vehicle Sensors Calibrating"),
   },
 
+  EventName.torqueNNFFLoadSuccess: {
+    ET.PERMANENT: Alert(
+      "e2e NN torque controller loaded successfully",
+      "",
+      AlertStatus.normal, AlertSize.small,
+      Priority.LOW, VisualAlert.none, AudibleAlert.none, 2.0),
+  },
+  
+  EventName.torqueNNFFNotLoaded: {
+    ET.PERMANENT: Alert(
+      "e2e NN torque controller not loaded.",
+      "go donate logs to twilsonco to get loaded!",
+      AlertStatus.userPrompt, AlertSize.mid,
+      Priority.LOW, VisualAlert.none, AudibleAlert.prompt, 6.0),
+  },
 }
 
 
