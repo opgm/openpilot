@@ -5,7 +5,7 @@ from openpilot.common.conversions import Conversions as CV
 from openpilot.common.numpy_fast import clip
 from openpilot.common.realtime import DT_CTRL
 from openpilot.system.version import get_build_metadata
-from openpilot.selfdrive.car.gm.values import GMFlags, CC_ONLY_CAR
+from opendbc.car.gm.values import GMFlags, CC_ONLY_CAR
 
 EventName = car.CarEvent.EventName
 
