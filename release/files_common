@@ -537,6 +537,7 @@ opendbc/chrysler_pacifica_2017_hybrid_generated.dbc
 opendbc/chrysler_pacifica_2017_hybrid_private_fusion.dbc
 
 opendbc/gm_global_a_powertrain_generated.dbc
+opendbc/gm_global_a_powertrain_volt.dbc
 opendbc/gm_global_a_object.dbc
 opendbc/gm_global_a_chassis.dbc
 
@@ -602,3 +603,4 @@ tinygrad_repo/tinygrad/shape/*
 tinygrad_repo/tinygrad/*.py
 
 selfdrive/controls/always_on_lateral.py
+selfdrive/car/torque_data/lat_models/*.json
