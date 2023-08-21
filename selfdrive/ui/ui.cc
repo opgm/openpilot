@@ -14,7 +14,6 @@
 
 #define BACKLIGHT_DT 0.05
 #define BACKLIGHT_TS 10.00
-#define BACKLIGHT_OFFROAD 50
 
 // Projects a point in car to space to the corresponding point in full frame
 // image space.
@@ -79,7 +78,7 @@ void update_line_data(const UIState *s, const cereal::XYZTData::Reader &line,
   *pvd = left_points + right_points;
 }
 
-void update_model(UIState *s, 
+void update_model(UIState *s,
                   const cereal::ModelDataV2::Reader &model,
                   const cereal::UiPlan::Reader &plan) {
   UIScene &scene = s->scene;
@@ -159,8 +158,9 @@ static void update_state(UIState *s) {
   UIScene &scene = s->scene;
 
   if (sm.updated("liveCalibration")) {
-    auto rpy_list = sm["liveCalibration"].getLiveCalibration().getRpyCalib();
-    auto wfde_list = sm["liveCalibration"].getLiveCalibration().getWideFromDeviceEuler();
+    auto live_calib = sm["liveCalibration"].getLiveCalibration();
+    auto rpy_list = live_calib.getRpyCalib();
+    auto wfde_list = live_calib.getWideFromDeviceEuler();
     Eigen::Vector3d rpy;
     Eigen::Vector3d wfde;
     if (rpy_list.size() == 3) rpy << rpy_list[0], rpy_list[1], rpy_list[2];
@@ -179,7 +179,7 @@ static void update_state(UIState *s) {
         scene.view_from_wide_calib.v[i*3 + j] = view_from_wide_calib(i,j);
       }
     }
-    scene.calibration_valid = sm["liveCalibration"].getLiveCalibration().getCalStatus() == cereal::LiveCalibrationData::Status::CALIBRATED;
+    scene.calibration_valid = live_calib.getCalStatus() == cereal::LiveCalibrationData::Status::CALIBRATED;
     scene.calibration_wide_valid = wfde_list.size() == 3;
   }
   if (sm.updated("pandaStates")) {
@@ -197,12 +197,38 @@ static void update_state(UIState *s) {
   } else if ((s->sm->frame - s->sm->rcv_frame("pandaStates")) > 5*UI_FREQ) {
     scene.pandaType = cereal::PandaState::PandaType::UNKNOWN;
   }
+  if (sm.updated("carControl")) {
+    const auto carControl = sm["carControl"].getCarControl();
+  }
   if (sm.updated("carParams")) {
-    scene.longitudinal_control = sm["carParams"].getCarParams().getOpenpilotLongitudinalControl();
+    const auto carParams = sm["carParams"].getCarParams();
+    scene.longitudinal_control = carParams.getOpenpilotLongitudinalControl();
+  }
+  if (sm.updated("carState")) {
+    const auto carState = sm["carState"].getCarState();
+    if (scene.started) {
+      scene.toyota_car = carState.getToyotaCar();
+    }
+  }
+  if (sm.updated("controlsState")) {
+    const auto controlsState = sm["controlsState"].getControlsState();
+    scene.enabled = controlsState.getEnabled();
+    scene.experimental_mode = controlsState.getExperimentalMode();
+  }
+  if (sm.updated("gpsLocationExternal")) {
+    const auto gpsLocationExternal = sm["gpsLocationExternal"].getGpsLocationExternal();
+  }
+  if (sm.updated("lateralPlan")) {
+    const auto lateralPlan = sm["lateralPlan"].getLateralPlan();
+  }
+  if (sm.updated("longitudinalPlan")) {
+    const auto longitudinalPlan = sm["longitudinalPlan"].getLongitudinalPlan();
+    scene.frogpilot_toggles_updated = longitudinalPlan.getFrogpilotTogglesUpdated();
   }
   if (sm.updated("wideRoadCameraState")) {
-    float scale = (sm["wideRoadCameraState"].getWideRoadCameraState().getSensor() == cereal::FrameData::ImageSensor::AR0231) ? 6.0f : 1.0f;
-    scene.light_sensor = std::max(100.0f - scale * sm["wideRoadCameraState"].getWideRoadCameraState().getExposureValPercent(), 0.0f);
+    auto cam_state = sm["wideRoadCameraState"].getWideRoadCameraState();
+    float scale = (cam_state.getSensor() == cereal::FrameData::ImageSensor::AR0231) ? 6.0f : 1.0f;
+    scene.light_sensor = std::max(100.0f - scale * cam_state.getExposureValPercent(), 0.0f);
   }
   scene.started = sm["deviceState"].getDeviceState().getStarted() && scene.ignition;
 }
@@ -211,6 +237,36 @@ void ui_update_params(UIState *s) {
   auto params = Params();
   s->scene.is_metric = params.getBool("IsMetric");
   s->scene.map_on_left = params.getBool("NavSettingLeftSide");
+
+  // FrogPilot variables
+  static Params params_memory = Params("/dev/shm/params");
+  static UIScene &scene = s->scene;
+  static bool toggles_checked = false;
+  if (!scene.default_params_set) {
+    scene.default_params_set = params.getBool("DefaultParamsSet");
+  }
+  if (!toggles_checked && scene.default_params_set) {
+    scene.frog_theme = params.getBool("FrogTheme");
+    scene.frog_colors = scene.frog_theme && params.getBool("FrogColors");
+    scene.mute_dm = params.getBool("FireTheBabysitter") && params.getBool("MuteDM");
+    scene.screen_brightness = params.getInt("ScreenBrightness");
+    scene.wide_camera_disabled = params.getBool("WideCameraDisable");
+    toggles_checked = true;
+  }
+  // FrogPilot variables that need to be updated whenever the user changes a toggle value
+  if (!scene.started) {
+    scene.frogpilot_toggles_updated = params_memory.getBool("FrogPilotTogglesUpdated");
+    if (scene.frogpilot_toggles_updated) {
+      static bool frogpilot_toggles_checked = false;
+      if (frogpilot_toggles_checked) {
+        params_memory.putBool("FrogPilotTogglesUpdated", false);
+      }
+      frogpilot_toggles_checked = !frogpilot_toggles_checked;
+    }
+  }
+  if (scene.frogpilot_toggles_updated) {
+    scene.screen_brightness = params.getInt("ScreenBrightness");
+  }
 }
 
 void UIState::updateStatus() {
@@ -233,13 +289,18 @@ void UIState::updateStatus() {
     started_prev = scene.started;
     emit offroadTransition(!scene.started);
   }
+
+  if (!scene.started) {
+    ui_update_params(uiState());
+  }
 }
 
 UIState::UIState(QObject *parent) : QObject(parent) {
   sm = std::make_unique<SubMaster, const std::initializer_list<const char *>>({
     "modelV2", "controlsState", "liveCalibration", "radarState", "deviceState", "roadCameraState",
     "pandaStates", "carParams", "driverMonitoringState", "carState", "liveLocationKalman", "driverStateV2",
-    "wideRoadCameraState", "managerState", "navInstruction", "navRoute", "uiPlan",
+    "wideRoadCameraState", "managerState", "navInstruction", "navRoute", "uiPlan", "carControl",
+    "gpsLocationExternal", "lateralPlan", "longitudinalPlan"
   });
 
   Params params;
@@ -273,7 +334,7 @@ void UIState::setPrimeType(int type) {
 
 Device::Device(QObject *parent) : brightness_filter(BACKLIGHT_OFFROAD, BACKLIGHT_TS, BACKLIGHT_DT), QObject(parent) {
   setAwake(true);
-  resetInteractiveTimout();
+  resetInteractiveTimeout();
 
   QObject::connect(uiState(), &UIState::uiUpdate, this, &Device::update);
 }
@@ -281,9 +342,6 @@ Device::Device(QObject *parent) : brightness_filter(BACKLIGHT_OFFROAD, BACKLIGHT
 void Device::update(const UIState &s) {
   updateBrightness(s);
   updateWakefulness(s);
-
-  // TODO: remove from UIState and use signals
-  uiState()->awake = awake;
 }
 
 void Device::setAwake(bool on) {
@@ -295,12 +353,15 @@ void Device::setAwake(bool on) {
   }
 }
 
-void Device::resetInteractiveTimout() {
-  interactive_timeout = (ignition_on ? 10 : 30) * UI_FREQ;
+void Device::resetInteractiveTimeout(int timeout) {
+  if (timeout == -1) {
+    timeout = (ignition_on ? 10 : 30);
+  }
+  interactive_timeout = timeout * UI_FREQ;
 }
 
 void Device::updateBrightness(const UIState &s) {
-  float clipped_brightness = BACKLIGHT_OFFROAD;
+  float clipped_brightness = offroad_brightness;
   if (s.scene.started) {
     clipped_brightness = s.scene.light_sensor;
 
@@ -318,6 +379,12 @@ void Device::updateBrightness(const UIState &s) {
   int brightness = brightness_filter.update(clipped_brightness);
   if (!awake) {
     brightness = 0;
+  } else if (s.scene.screen_brightness <= 100 && s.scene.default_params_set) {
+    brightness = s.scene.screen_brightness;
+    if (awake) {
+      // Bring the screen brightness up to 5% upon screen tap
+      brightness = fmax(5, s.scene.screen_brightness);
+    }
   }
 
   if (brightness != last_brightness) {
@@ -333,15 +400,24 @@ void Device::updateWakefulness(const UIState &s) {
   ignition_on = s.scene.ignition;
 
   if (ignition_just_turned_off) {
-    resetInteractiveTimout();
+    resetInteractiveTimeout();
   } else if (interactive_timeout > 0 && --interactive_timeout == 0) {
-    emit interactiveTimout();
+    emit interactiveTimeout();
   }
 
-  setAwake(s.scene.ignition || interactive_timeout > 0);
+  if (s.scene.screen_brightness != 0) {
+    setAwake(s.scene.ignition || interactive_timeout > 0);
+  } else {
+    setAwake(interactive_timeout > 0);
+  }
 }
 
 UIState *uiState() {
   static UIState ui_state;
   return &ui_state;
+}
+
+Device *device() {
+  static Device _device;
+  return &_device;
 }

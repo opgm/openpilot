@@ -20,6 +20,7 @@ const int UI_BORDER_SIZE = 30;
 const int UI_HEADER_HEIGHT = 420;
 
 const int UI_FREQ = 20; // Hz
+const int BACKLIGHT_OFFROAD = 50;
 typedef cereal::CarControl::HUDControl::AudibleAlert AudibleAlert;
 
 const mat3 DEFAULT_CALIBRATION = {{ 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0 }};
@@ -92,24 +93,23 @@ typedef enum UIStatus {
   STATUS_DISENGAGED,
   STATUS_OVERRIDE,
   STATUS_ENGAGED,
-  // PFEIFER - AOL {{
-  STATUS_LAT_ACTIVE,
-  // }} PFEIFER - AOL
+
+  // FrogPilot statuses
 } UIStatus;
 
 const QColor bg_colors [] = {
   [STATUS_DISENGAGED] = QColor(0x17, 0x33, 0x49, 0xc8),
   [STATUS_OVERRIDE] = QColor(0x91, 0x9b, 0x95, 0xf1),
   [STATUS_ENGAGED] = QColor(0x17, 0x86, 0x44, 0xf1),
-  // PFEIFER - AOL {{
-  [STATUS_LAT_ACTIVE] = QColor(0x6f, 0xc0, 0xc9, 0xf1),
-  // }} PFEIFER - AOL
+
+  // FrogPilot colors
 };
 
 static std::map<cereal::ControlsState::AlertStatus, QColor> alert_colors = {
   {cereal::ControlsState::AlertStatus::NORMAL, QColor(0x15, 0x15, 0x15, 0xf1)},
   {cereal::ControlsState::AlertStatus::USER_PROMPT, QColor(0xDA, 0x6F, 0x25, 0xf1)},
   {cereal::ControlsState::AlertStatus::CRITICAL, QColor(0xC9, 0x22, 0x31, 0xf1)},
+  {cereal::ControlsState::AlertStatus::FROGPILOT, QColor(0x17, 0x86, 0x44, 0xf1)},
 };
 
 typedef struct UIScene {
@@ -137,9 +137,24 @@ typedef struct UIScene {
   float driver_pose_coss[3];
   vec3 face_kpts_draw[std::size(default_face_kpts_3d)];
 
+  bool navigate_on_openpilot = false;
+
   float light_sensor;
   bool started, ignition, is_metric, map_on_left, longitudinal_control;
   uint64_t started_frame;
+
+  // FrogPilot variables
+  bool default_params_set;
+  bool enabled;
+  bool experimental_mode;
+  bool frog_colors;
+  bool frog_theme;
+  bool frogpilot_toggles_updated;
+  bool mute_dm;
+  bool toyota_car = true;
+  bool wide_camera_disabled;
+  int screen_brightness;
+
 } UIScene;
 
 class UIState : public QObject {
@@ -165,7 +180,6 @@ public:
   UIStatus status;
   UIScene scene = {};
 
-  bool awake;
   QString language;
 
   QTransform car_space_transform;
@@ -192,11 +206,17 @@ class Device : public QObject {
 
 public:
   Device(QObject *parent = 0);
+  bool isAwake() { return awake; }
+  void setOffroadBrightness(int brightness) {
+    offroad_brightness = std::clamp(brightness, 0, 100);
+  }
 
 private:
   bool awake = false;
   int interactive_timeout = 0;
   bool ignition_on = false;
+
+  int offroad_brightness = BACKLIGHT_OFFROAD;
   int last_brightness = 0;
   FirstOrderFilter brightness_filter;
   QFuture<void> brightness_future;
@@ -207,12 +227,14 @@ private:
 
 signals:
   void displayPowerChanged(bool on);
-  void interactiveTimout();
+  void interactiveTimeout();
 
 public slots:
-  void resetInteractiveTimout();
+  void resetInteractiveTimeout(int timeout = -1);
   void update(const UIState &s);
 };
+
+Device *device();
 
 void ui_update_params(UIState *s);
 int get_path_length_idx(const cereal::XYZTData::Reader &line, const float path_height);

@@ -12,6 +12,9 @@
 const int btn_size = 192;
 const int img_size = (btn_size / 4) * 3;
 
+// FrogPilot global variables
+static bool map_open;
+
 
 // ***** onroad widgets *****
 class OnroadAlerts : public QWidget {
@@ -32,6 +35,8 @@ private:
 class ExperimentalButton : public QPushButton {
   Q_OBJECT
 
+  // FrogPilot properties
+
 public:
   explicit ExperimentalButton(QWidget *parent = 0);
   void updateState(const UIState &s);
@@ -45,6 +50,22 @@ private:
   QPixmap experimental_img;
   bool experimental_mode;
   bool engageable;
+
+  // FrogPilot variables
+
+};
+
+
+class MapSettingsButton : public QPushButton {
+  Q_OBJECT
+
+public:
+  explicit MapSettingsButton(QWidget *parent = 0);
+
+private:
+  void paintEvent(QPaintEvent *event) override;
+
+  QPixmap settings_img;
 };
 
 // container window for the NVG UI
@@ -60,18 +81,28 @@ class AnnotatedCameraWidget : public CameraWidget {
   Q_PROPERTY(bool is_metric MEMBER is_metric);
 
   Q_PROPERTY(bool dmActive MEMBER dmActive);
-  Q_PROPERTY(bool hideDM MEMBER hideDM);
+  Q_PROPERTY(bool hideBottomIcons MEMBER hideBottomIcons);
   Q_PROPERTY(bool rightHandDM MEMBER rightHandDM);
   Q_PROPERTY(int status MEMBER status);
+
+  // FrogPilot properties
+  Q_PROPERTY(bool experimentalMode MEMBER experimentalMode);
+  Q_PROPERTY(bool frogColors MEMBER frogColors);
+  Q_PROPERTY(bool muteDM MEMBER muteDM);
 
 public:
   explicit AnnotatedCameraWidget(VisionStreamType type, QWidget* parent = 0);
   void updateState(const UIState &s);
 
+  MapSettingsButton *map_settings_btn;
+
 private:
-  void drawIcon(QPainter &p, int x, int y, QPixmap &img, QBrush bg, float opacity);
   void drawText(QPainter &p, int x, int y, const QString &text, int alpha = 255);
 
+  // FrogPilot widgets
+  void drawStatusBar(QPainter &p);
+
+  QVBoxLayout *main_layout;
   ExperimentalButton *experimental_btn;
   QPixmap dm_img;
   float speed;
@@ -81,7 +112,7 @@ private:
   bool is_cruise_set = false;
   bool is_metric = false;
   bool dmActive = false;
-  bool hideDM = false;
+  bool hideBottomIcons = false;
   bool rightHandDM = false;
   float dm_fade_state = 1.0;
   bool has_us_speed_limit = false;
@@ -92,6 +123,11 @@ private:
 
   int skip_frame_count = 0;
   bool wide_cam_requested = false;
+
+  // FrogPilot variables
+  bool experimentalMode;
+  bool frogColors;
+  bool muteDM;
 
 protected:
   void paintGL() override;
@@ -106,6 +142,9 @@ protected:
   inline QColor whiteColor(int alpha = 255) { return QColor(255, 255, 255, alpha); }
   inline QColor blackColor(int alpha = 255) { return QColor(0, 0, 0, alpha); }
 
+  // FrogPilot colors
+  inline QColor frogColor(int alpha = 242) { return QColor(23, 134, 68, alpha); }
+
   double prev_draw_t = 0;
   FirstOrderFilter fps_filter;
 };
@@ -117,9 +156,10 @@ class OnroadWindow : public QWidget {
 public:
   OnroadWindow(QWidget* parent = 0);
   bool isMapVisible() const { return map && map->isVisible(); }
+  void showMapPanel(bool show) { if (map) map->setVisible(show); }
 
 signals:
-  void mapWindowShown();
+  void mapPanelRequested();
 
 private:
   void paintEvent(QPaintEvent *event);
@@ -129,10 +169,6 @@ private:
   QColor bg = bg_colors[STATUS_DISENGAGED];
   QWidget *map = nullptr;
   QHBoxLayout* split;
-  bool navDisabled = false;
-  // PFEIFER - AOL {{
-  Params params;
-  // }} PFEIFER - AOL
 
 private slots:
   void offroadTransition(bool offroad);

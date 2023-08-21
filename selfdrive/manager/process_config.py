@@ -5,6 +5,11 @@ from common.params import Params
 from system.hardware import PC, TICI
 from selfdrive.manager.process import PythonProcess, NativeProcess, DaemonProcess
 
+# FrogPilot variables
+params = Params()
+mute_dm = params.get_bool("FireTheBabysitter") and params.get_bool("MuteDM")
+enable_logging = not params.get_bool("DisableAllLogging")
+
 WEBCAM = os.getenv("USE_WEBCAM") is not None
 
 def driverview(started: bool, params: Params, CP: car.CarParams) -> bool:
@@ -12,6 +17,9 @@ def driverview(started: bool, params: Params, CP: car.CarParams) -> bool:
 
 def notcar(started: bool, params: Params, CP: car.CarParams) -> bool:
   return CP.notCar  # type: ignore
+
+def iscar(started: bool, params: Params, CP: car.CarParams) -> bool:
+  return not CP.notCar
 
 def logging(started, params, CP: car.CarParams) -> bool:
   run = (not CP.notCar) or not params.get_bool("DisableLogging")
@@ -30,19 +38,19 @@ def qcomgps(started, params, CP: car.CarParams) -> bool:
   return started and not ublox_available()
 
 procs = [
-  # due to qualcomm kernel bugs SIGKILLing camerad sometimes causes page table corruption
-  NativeProcess("camerad", "system/camerad", ["./camerad"], unkillable=True, callback=driverview),
+  NativeProcess("camerad", "system/camerad", ["./camerad"], callback=driverview),
   NativeProcess("clocksd", "system/clocksd", ["./clocksd"]),
-  NativeProcess("logcatd", "system/logcatd", ["./logcatd"]),
+  NativeProcess("logcatd", "system/logcatd", ["./logcatd"], enabled=enable_logging),
   NativeProcess("proclogd", "system/proclogd", ["./proclogd"]),
-  PythonProcess("logmessaged", "system.logmessaged", offroad=True),
-  PythonProcess("micd", "system.micd"),
+  PythonProcess("logmessaged", "system.logmessaged", enabled=enable_logging, offroad=True),
+  PythonProcess("micd", "system.micd", callback=iscar),
   PythonProcess("timezoned", "system.timezoned", enabled=not PC, offroad=True),
 
   DaemonProcess("manage_athenad", "selfdrive.athena.manage_athenad", "AthenadPid"),
-  NativeProcess("dmonitoringmodeld", "selfdrive/modeld", ["./dmonitoringmodeld"], enabled=(not PC or WEBCAM), callback=driverview),
+  NativeProcess("dmonitoringmodeld", "selfdrive/modeld", ["./dmonitoringmodeld"], enabled=(not PC or WEBCAM) and not mute_dm, callback=driverview),
   NativeProcess("encoderd", "system/loggerd", ["./encoderd"]),
-  NativeProcess("loggerd", "system/loggerd", ["./loggerd"], onroad=False, callback=logging),
+  NativeProcess("stream_encoderd", "system/loggerd", ["./encoderd", "--stream"], onroad=False, callback=notcar),
+  NativeProcess("loggerd", "system/loggerd", ["./loggerd"], enabled=enable_logging, onroad=False, callback=logging),
   NativeProcess("modeld", "selfdrive/modeld", ["./modeld"]),
   NativeProcess("mapsd", "selfdrive/navd", ["./mapsd"]),
   NativeProcess("navmodeld", "selfdrive/modeld", ["./navmodeld"]),
@@ -55,7 +63,7 @@ procs = [
   PythonProcess("torqued", "selfdrive.locationd.torqued"),
   PythonProcess("controlsd", "selfdrive.controls.controlsd"),
   PythonProcess("deleter", "system.loggerd.deleter", offroad=True),
-  PythonProcess("dmonitoringd", "selfdrive.monitoring.dmonitoringd", enabled=(not PC or WEBCAM), callback=driverview),
+  PythonProcess("dmonitoringd", "selfdrive.monitoring.dmonitoringd", enabled=(not PC or WEBCAM) and not mute_dm, callback=driverview),
   PythonProcess("laikad", "selfdrive.locationd.laikad"),
   PythonProcess("rawgpsd", "system.sensord.rawgps.rawgpsd", enabled=TICI, onroad=False, callback=qcomgps),
   PythonProcess("navd", "selfdrive.navd.navd"),
@@ -65,15 +73,15 @@ procs = [
   PythonProcess("pigeond", "system.sensord.pigeond", enabled=TICI, onroad=False, callback=ublox),
   PythonProcess("plannerd", "selfdrive.controls.plannerd"),
   PythonProcess("radard", "selfdrive.controls.radard"),
-  PythonProcess("thermald", "selfdrive.thermald.thermald", offroad=True),
-  PythonProcess("tombstoned", "selfdrive.tombstoned", enabled=not PC, offroad=True),
+  PythonProcess("thermald", "selfdrive.thermald.thermald", enabled=enable_logging, offroad=True),
+  PythonProcess("tombstoned", "selfdrive.tombstoned", enabled=not PC and enable_logging, offroad=True),
   PythonProcess("updated", "selfdrive.updated", enabled=not PC, onroad=False, offroad=True),
-  PythonProcess("uploader", "system.loggerd.uploader", offroad=True),
-  PythonProcess("statsd", "selfdrive.statsd", offroad=True),
+  PythonProcess("uploader", "system.loggerd.uploader", enabled=enable_logging, offroad=True),
+  PythonProcess("statsd", "selfdrive.statsd", enabled=enable_logging, offroad=True),
 
   # debug procs
   NativeProcess("bridge", "cereal/messaging", ["./bridge"], onroad=False, callback=notcar),
-  PythonProcess("webjoystick", "tools.joystick.web", onroad=False, callback=notcar),
+  PythonProcess("webjoystick", "tools.bodyteleop.web", onroad=False, callback=notcar),
 ]
 
 managed_processes = {p.name: p for p in procs}

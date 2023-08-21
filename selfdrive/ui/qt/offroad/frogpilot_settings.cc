@@ -18,8 +18,7 @@ FrogPilotControlsPanel::FrogPilotControlsPanel(QWidget *parent) : FrogPilotPanel
 
   static const std::vector<std::tuple<QString, QString, QString, QString>> toggles = {
     {"DeviceShutdownTimer", "Device Shutdown Timer", "Set the timer for when the device turns off after being offroad to reduce energy waste and prevent battery drain.", "../assets/offroad/icon_time.png"},
-    {"FireTheBabysitter", "Fire the Babysitter", "Disable some of openpilot's 'Babysitter Protocols'.", "../assets/offroad/icon_babysitter.png"},
-    {"NudgelessLaneChange", "Nudgeless Lane Change", "Switch lanes without having to nudge the steering wheel.", "../assets/offroad/icon_lane.png"}
+    {"FireTheBabysitter", "Fire the Babysitter", "Disable some of openpilot's 'Babysitter Protocols'.", "../assets/offroad/icon_babysitter.png"}
   };
 
   for (const auto &[key, label, desc, icon] : toggles) {
@@ -36,14 +35,6 @@ FrogPilotControlsPanel::FrogPilotControlsPanel(QWidget *parent) : FrogPilotPanel
         {"MuteDoor", "Mute Door Open"},
         {"MuteSeatbelt", "Mute Seatbelt"},
         {"MuteSystemOverheat", "Mute Overheat"}
-      }, mainLayout);
-    } else if (key == "NudgelessLaneChange") {
-      createSubControl(key, label, desc, icon, {
-        new LaneChangeTimer(),
-      });
-      createSubButtonControl(key, {
-        {"LaneDetection", "Lane Detection"},
-        {"OneLaneChange", "One Lane Change Per Signal"},
       }, mainLayout);
     } else {
       mainLayout->addWidget(control);
@@ -63,7 +54,6 @@ FrogPilotVisualsPanel::FrogPilotVisualsPanel(QWidget *parent) : FrogPilotPanel(p
 
   static const std::vector<std::tuple<QString, QString, QString, QString>> toggles = {
     {"FrogTheme", "FrogPilot Theme", "Enable the beloved FrogPilot Theme! Disable toggle to revert back to the stock openpilot theme.", "../assets/images/frog_button_home.png"},
-    {"NumericalTemp", "Numerical Temperature Gauge", "Replace openpilot's 'GOOD', 'OK', and 'HIGH' temperature statuses with numerical values.\n\nTap the gauge to switch between Celsius and Fahrenheit.", "../assets/offroad/icon_temp.png"},
     {"ScreenBrightness", "Screen Brightness", "Choose a custom screen brightness level or use the default 'Auto' brightness setting.", "../assets/offroad/icon_light.png"},
     {"Sidebar", "Sidebar Shown By Default", "Sidebar is shown by default while onroad as opposed to hidden.", "../assets/offroad/icon_metric.png"},
     {"SilentMode", "Silent Mode", "Disables all openpilot sounds for a completely silent experience.", "../assets/offroad/icon_mute.png"},
