@@ -13,15 +13,15 @@ TRAJECTORY_SIZE = 33
 CAMERA_OFFSET = 0.04
 
 
-PATH_COST = 1.1
+PATH_COST = 1.0
 LATERAL_MOTION_COST = 0.11
-LATERAL_ACCEL_COST = 0.6
-LATERAL_JERK_COST = 0.05
+LATERAL_ACCEL_COST = 0.0
+LATERAL_JERK_COST = 0.04
 # Extreme steering rate is unpleasant, even
 # when it does not cause bad jerk.
 # TODO this cost should be lowered when low
 # speed lateral control is stable on all cars
-STEERING_RATE_COST = 5.0
+STEERING_RATE_COST = 700.0
 
 
 class LateralPlanner:
@@ -50,7 +50,11 @@ class LateralPlanner:
     self.lat_mpc = LateralMpc()
     self.reset_mpc(np.zeros(4))
 
-  def reset_mpc(self, x0=np.zeros(4)):
+    # FrogPilot variables
+
+  def reset_mpc(self, x0=None):
+    if x0 is None:
+      x0 = np.zeros(4)
     self.x0 = x0
     self.lat_mpc.reset(x0=self.x0)
 
@@ -130,7 +134,7 @@ class LateralPlanner:
     lateralPlan.psis = self.lat_mpc.x_sol[0:CONTROL_N, 2].tolist()
 
     lateralPlan.curvatures = (self.lat_mpc.x_sol[0:CONTROL_N, 3]/self.v_ego).tolist()
-    lateralPlan.curvatureRates = [float(x/self.v_ego) for x in self.lat_mpc.u_sol[0:CONTROL_N - 1]] + [0.0]
+    lateralPlan.curvatureRates = [float(x.item() / self.v_ego) for x in self.lat_mpc.u_sol[0:CONTROL_N - 1]] + [0.0]
 
     lateralPlan.mpcSolutionValid = bool(plan_solution_valid)
     lateralPlan.solverExecutionTime = self.lat_mpc.solve_time
@@ -144,5 +148,9 @@ class LateralPlanner:
     lateralPlan.useLaneLines = False
     lateralPlan.laneChangeState = self.DH.lane_change_state
     lateralPlan.laneChangeDirection = self.DH.lane_change_direction
+
+    # FrogPilot lateral variables
+    lateralPlan.laneWidthLeft = float(self.DH.lane_width_left)
+    lateralPlan.laneWidthRight = float(self.DH.lane_width_right)
 
     pm.send('lateralPlan', plan_send)
