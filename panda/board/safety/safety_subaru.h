@@ -165,6 +165,15 @@ static int subaru_rx_hook(CANPacket_t *to_push) {
 
     // enter controls on rising edge of ACC, exit controls on ACC off
     if ((addr == MSG_SUBARU_CruiseControl) && (bus == alt_main_bus)) {
+      // PFEIFER - AOL {{
+      bool cruise_available = GET_BIT(to_push, 40U) != 0U;
+      if (!cruise_available) {
+        lateral_controls_allowed = 0;
+      }
+      if(alternative_experience & ALT_EXP_AOL_ENABLE_ON_MAIN) {
+        lateral_controls_allowed = cruise_available;
+      }
+      // }} PFEIFER - AOL
       bool cruise_engaged = GET_BIT(to_push, 41U) != 0U;
       pcm_cruise_check(cruise_engaged);
     }
@@ -232,7 +241,7 @@ static int subaru_tx_hook(CANPacket_t *to_send) {
   if (addr == MSG_SUBARU_ES_Distance) {
     int cruise_throttle = (GET_BYTES(to_send, 2, 2) & 0xFFFU);
     bool cruise_cancel = GET_BIT(to_send, 56U) != 0U;
-    
+
     if (subaru_longitudinal) {
       violation |= longitudinal_gas_checks(cruise_throttle, SUBARU_LONG_LIMITS);
     } else {

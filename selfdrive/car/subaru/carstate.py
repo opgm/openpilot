@@ -7,6 +7,10 @@ from opendbc.can.parser import CANParser
 from openpilot.selfdrive.car.subaru.values import DBC, GLOBAL_GEN2, PREGLOBAL_CARS, HYBRID_CARS, CanBus, SubaruFlags
 from openpilot.selfdrive.car import CanSignalRateCalculator
 
+# PFEIFER - AOL {{
+from openpilot.selfdrive.controls.always_on_lateral import AlwaysOnLateral, AlwaysOnLateralType
+# }} PFEIFER - AOL
+
 
 class CarState(CarStateBase):
   def __init__(self, CP):
@@ -15,6 +19,10 @@ class CarState(CarStateBase):
     self.shifter_values = can_define.dv["Transmission"]["Gear"]
 
     self.angle_rate_calulator = CanSignalRateCalculator(50)
+
+    # PFEIFER - AOL {{
+    AlwaysOnLateral.set_always_on_lateral_type(AlwaysOnLateralType.CRUISE_STATE)
+    # }} PFEIFER - AOL
 
   def update(self, cp, cp_cam, cp_body):
     ret = car.CarState.new_message()

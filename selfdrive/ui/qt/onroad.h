@@ -134,6 +134,9 @@ private:
   QColor bg = bg_colors[STATUS_DISENGAGED];
   QWidget *map = nullptr;
   QHBoxLayout* split;
+  // PFEIFER - AOL {{
+  Params params;
+  // }} PFEIFER - AOL
 
 private slots:
   void offroadTransition(bool offroad);

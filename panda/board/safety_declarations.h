@@ -193,6 +193,9 @@ void safety_tick(const addr_checks *addr_checks);
 
 // This can be set by the safety hooks
 bool controls_allowed = false;
+// PFEIFER - AOL {{
+bool lateral_controls_allowed = false;
+// }} PFEIFER - AOL
 bool relay_malfunction = false;
 bool gas_interceptor_detected = false;
 int gas_interceptor_prev = 0;
@@ -207,6 +210,10 @@ struct sample_t vehicle_speed;
 bool vehicle_moving = false;
 bool acc_main_on = false;  // referred to as "ACC off" in ISO 15622:2018
 int cruise_button_prev = 0;
+// PFEIFER - AOL {{
+int main_button_prev = 0;
+bool set_me_prev = false;
+// }} PFEIFER - AOL
 bool safety_rx_checks_invalid = false;
 
 // for safety modes with torque steering control
@@ -249,3 +256,8 @@ int alternative_experience = 0;
 uint32_t safety_mode_cnt = 0U;
 // allow 1s of transition timeout after relay changes state before assessing malfunctioning
 const uint32_t RELAY_TRNS_TIMEOUT = 1U;
+
+// PFEIFER - AOL {{
+#define ALT_EXP_ENABLE_ALWAYS_ON_LATERAL 16
+#define ALT_EXP_AOL_ENABLE_ON_MAIN 32
+// }} PFEIFER - AOL

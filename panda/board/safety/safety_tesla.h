@@ -98,6 +98,20 @@ static int tesla_rx_hook(CANPacket_t *to_push) {
       if(addr == (tesla_powertrain ? 0x256 : 0x368)) {
         // Cruise state
         int cruise_state = (GET_BYTE(to_push, 1) >> 4);
+        // PFEIFER - AOL {{
+        bool cruise_available = (cruise_state == 1) ||  // STANDBY
+                                (cruise_state == 2) ||  // ENABLED
+                                (cruise_state == 3) ||  // STANDSTILL
+                                (cruise_state == 4) ||  // OVERRIDE
+                                (cruise_state == 6) ||  // PRE_FAULT
+                                (cruise_state == 7);    // PRE_CANCEL
+        if(!cruise_available) {
+          lateral_controls_allowed = 0;
+        }
+        if(alternative_experience & ALT_EXP_AOL_ENABLE_ON_MAIN) {
+          lateral_controls_allowed = cruise_available;
+        }
+        // }} PFEIFER - AOL
         bool cruise_engaged = (cruise_state == 2) ||  // ENABLED
                               (cruise_state == 3) ||  // STANDSTILL
                               (cruise_state == 4) ||  // OVERRIDE

@@ -158,7 +158,15 @@ static int volkswagen_mqb_rx_hook(CANPacket_t *to_push) {
 
       if (!acc_main_on) {
         controls_allowed = false;
+        // PFEIFER - AOL {{
+        lateral_controls_allowed = 0;
+        // }} PFEIFER - AOL
       }
+      // PFEIFER - AOL {{
+      if(alternative_experience & ALT_EXP_AOL_ENABLE_ON_MAIN) {
+        lateral_controls_allowed = acc_main_on;
+      }
+      // }} PFEIFER - AOL
     }
 
     if (addr == MSG_GRA_ACC_01) {

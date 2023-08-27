@@ -112,6 +112,18 @@ static int gm_rx_hook(CANPacket_t *to_push) {
       brake_pressed = GET_BYTE(to_push, 1) >= 8U;
     }
 
+    // PFEIFER - AOL {{
+    if (addr == 0xC9) {
+      bool cruise_available = GET_BIT(to_push, 29U) != 0U;
+      if(!cruise_available) {
+        lateral_controls_allowed = 0;
+      }
+      if(alternative_experience & ALT_EXP_AOL_ENABLE_ON_MAIN) {
+        lateral_controls_allowed = cruise_available;
+      }
+    }
+    // }} PFEIFER - AOL
+
     if ((addr == 0xC9) && (gm_hw == GM_CAM)) {
       brake_pressed = GET_BIT(to_push, 40U) != 0U;
     }

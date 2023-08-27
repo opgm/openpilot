@@ -231,6 +231,15 @@ static int hyundai_canfd_rx_hook(CANPacket_t *to_push) {
 
     // brake press
     if (addr == 0x175) {
+      // PFEIFER - AOL {{
+      bool cruise_available = ((GET_BYTE(to_push, 8) >> 3) & 0x8U) == 0U;
+      if(!cruise_available) {
+        lateral_controls_allowed = 0;
+      }
+      if(alternative_experience & ALT_EXP_AOL_ENABLE_ON_MAIN) {
+        lateral_controls_allowed = cruise_available;
+      }
+      // }} PFEIFER - AOL
       brake_pressed = GET_BIT(to_push, 81U) != 0U;
     }
 
