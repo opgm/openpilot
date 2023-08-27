@@ -586,7 +586,6 @@ struct RadarState @0x9a185389d6fdd05f {
     aLeadTau @12 :Float32;
     modelProb @13 :Float32;
     radar @14 :Bool;
-    radarTrackId @15 :Int32 = -1;
 
     aLeadDEPRECATED @5 :Float32;
   }
@@ -703,7 +702,6 @@ struct ControlsState @0x97ff69c53601abf1 {
     normal @0;       # low priority alert for user's convenience
     userPrompt @1;   # mid priority alert that might require user intervention
     critical @2;     # high priority alert that needs immediate user intervention
-    frogpilot @3;    # green startup alert
   }
 
   enum AlertSize {
@@ -754,7 +752,8 @@ struct ControlsState @0x97ff69c53601abf1 {
     saturated @7 :Bool;
     actualLateralAccel @9 :Float32;
     desiredLateralAccel @10 :Float32;
-    nnLog @11 :List(Float32);
+    nnffInput @11 :List(Float32);
+    errorScaleFactor @12 :Float32;
    }
 
   struct LateralLQRState {
@@ -872,7 +871,6 @@ struct ModelDataV2 {
   temporalPose @21 :Pose;
 
   navEnabled @22 :Bool;
-  locationMonoTime @24 :UInt64;
 
 
   struct LeadDataV2 {
@@ -997,15 +995,9 @@ struct LongitudinalPlan @0xe00b5b3eba12876c {
   accels @32 :List(Float32);
   speeds @33 :List(Float32);
   jerks @34 :List(Float32);
-  distances @37 :List(Float32);
 
   solverExecutionTime @35 :Float32;
   personality @36 :LongitudinalPersonality;
-
-  # FrogPilot LongitudinalPlans
-  conditionalExperimentalMode @38 :Bool;
-  frogpilotTogglesUpdated @40 :Bool;
-  statusValue @43 :Int8;
 
   enum LongitudinalPlanSource {
     cruise @0;
@@ -2095,8 +2087,6 @@ struct NavInstruction {
   speedLimit @10 :Float32; # m/s
   speedLimitSign @11 :SpeedLimitSign;
 
-  allManeuvers @12 :List(Maneuver);
-
   struct Lane {
     directions @0 :List(Direction);
     active @1 :Bool;
@@ -2108,20 +2098,12 @@ struct NavInstruction {
     left @1;
     right @2;
     straight @3;
-    slightLeft @4;
-    slightRight @5;
   }
 
   enum SpeedLimitSign {
     mutcd @0; # US Style
     vienna @1; # EU Style
-  }
-
-  struct Maneuver {
-    distance @0 :Float32;
-    type @1 :Text;
-    modifier @2 :Text;
-  }
+    }
 }
 
 struct NavRoute {
@@ -2141,7 +2123,6 @@ struct MapRenderState {
 
 struct NavModelData {
   frameId @0 :UInt32;
-  locationMonoTime @6 :UInt64;
   modelExecutionTime @1 :Float32;
   dspExecutionTime @2 :Float32;
   features @3 :List(Float32);

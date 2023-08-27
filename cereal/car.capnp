@@ -116,9 +116,11 @@ struct CarEvent @0x9b1657f34caf3ad3 {
     steerTimeLimit @115;
     vehicleSensorsInvalid @116;
 
-    # FrogPilot Events
-    frogSteerSaturated @118;
-    torqueNNLoad @119;
+    torqueNNFFLoadSuccess @119;
+    torqueNNFFLoadFailure @120;
+    torqueNNFFNotLoaded @121;
+
+    pedalInterceptorNoBrake @118;
 
     radarCanErrorDEPRECATED @15;
     communityFeatureDisallowedDEPRECATED @62;
@@ -220,9 +222,6 @@ struct CarState {
 
   fuelGauge @41 :Float32; # battery or fuel tank level from 0.0 to 1.0
   charging @43 :Bool;
-
-  # FrogPilot CarStates
-  toyotaCar @48 :Bool;
 
   struct WheelSpeeds {
     # optional wheel speeds
@@ -331,9 +330,6 @@ struct CarControl {
   leftBlinker @15: Bool;
   rightBlinker @16: Bool;
 
-  # FrogPilot CarControls
-  reverseCruise @18: Bool;
-
   # Any car specific rate limits or quirks applied by
   # the CarController are reflected in actuatorsOutput
   # and matches what is sent to the car
@@ -432,6 +428,7 @@ struct CarParams {
   carName @0 :Text;
   carFingerprint @1 :Text;
   fuzzyFingerprint @55 :Bool;
+  nnffFingerprint @72 :Text;
 
   notCar @66 :Bool;  # flag for non-car robotics platforms
 
@@ -460,7 +457,6 @@ struct CarParams {
 
   # things we can derive
   rotationalInertia @22 :Float32;    # [kg*m2] body rotational inertia
-  tireStiffnessFactor @72 :Float32;  # scaling factor used in calculating tireStiffness[Front,Rear]
   tireStiffnessFront @23 :Float32;   # [N/rad] front tire coeff of stiff
   tireStiffnessRear @24 :Float32;    # [N/rad] rear tire coeff of stiff
 
@@ -501,17 +497,6 @@ struct CarParams {
 
   wheelSpeedFactor @63 :Float32; # Multiplier on wheels speeds to computer actual speeds
 
-  # FrogPilot CarParams
-  accelerationProfile @73 :UInt8;
-  conditionalExperimentalMode @75 :Bool;
-  drivingPersonalitiesUIWheel @76 :Bool;
-  experimentalModeViaWheel @77 :Bool;
-  lateralTune @78 :Bool;
-  longitudinalTune @79 :Bool;
-  pfeiferjDesiredCurvatures @80 :Bool;
-  tss2Tune @81 :Bool;
-  twilsoncoNNFF @82 :Bool;
-
   struct SafetyConfig {
     safetyModel @0 :SafetyModel;
     safetyParam @3 :UInt16;
@@ -541,7 +526,6 @@ struct CarParams {
     steeringAngleDeadzoneDeg @5 :Float32;
     latAccelFactor @6 :Float32;
     latAccelOffset @7 :Float32;
-    nnModelName @8 :Text;
   }
 
   struct LongitudinalPIDTuning {
@@ -614,7 +598,6 @@ struct CarParams {
     hongqi @26;
     body @27;
     hyundaiCanfd @28;
-    volkswagenMqbEvo @29;
   }
 
   enum SteerControlType {
