@@ -106,16 +106,18 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"ControlsReady", CLEAR_ON_MANAGER_START | CLEAR_ON_ONROAD_TRANSITION},
     {"CurrentBootlog", PERSISTENT},
     {"CurrentRoute", CLEAR_ON_MANAGER_START | CLEAR_ON_ONROAD_TRANSITION},
+<<<<<<< HEAD
     {"CustomRoadUI", PERSISTENT},
     {"DefaultParamsSet", PERSISTENT},
     {"DeviceShutdownTimer", PERSISTENT},
     {"DisableInternetCheck", PERSISTENT},
     {"DisableAllLogging", PERSISTENT},
+=======
+>>>>>>> parent of 17655632d (Nudgeless lane change + lane detection)
     {"DisableLogging", CLEAR_ON_MANAGER_START | CLEAR_ON_ONROAD_TRANSITION},
     {"DisablePowerDown", PERSISTENT},
     {"DisableUpdates", PERSISTENT},
     {"DisengageOnAccelerator", PERSISTENT},
-    {"DmModelInitialized", CLEAR_ON_ONROAD_TRANSITION},
     {"DongleId", PERSISTENT},
     {"DoReboot", CLEAR_ON_MANAGER_START},
     {"DoShutdown", CLEAR_ON_MANAGER_START},
@@ -123,16 +125,17 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"ExperimentalLongitudinalEnabled", PERSISTENT},
     {"ExperimentalMode", PERSISTENT},
     {"ExperimentalModeConfirmed", PERSISTENT},
-    {"Fahrenheit", PERSISTENT},
-    {"FireTheBabysitter", PERSISTENT},
     {"FirmwareQueryDone", CLEAR_ON_MANAGER_START | CLEAR_ON_ONROAD_TRANSITION},
     {"ForcePowerDown", PERSISTENT},
+<<<<<<< HEAD
     {"FrogColors", PERSISTENT},
     {"FrogIcons", PERSISTENT},
     {"FrogPilotTogglesUpdated", CLEAR_ON_MANAGER_START | CLEAR_ON_OFFROAD_TRANSITION},
     {"FrogSignals", PERSISTENT},
     {"FrogSounds", PERSISTENT},
     {"FrogTheme", PERSISTENT},
+=======
+>>>>>>> parent of 17655632d (Nudgeless lane change + lane detection)
     {"GitBranch", PERSISTENT},
     {"GitCommit", PERSISTENT},
     {"GitDiff", PERSISTENT},
@@ -160,9 +163,12 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"IsUpdateAvailable", CLEAR_ON_MANAGER_START},
     {"JoystickDebugMode", CLEAR_ON_MANAGER_START | CLEAR_ON_OFFROAD_TRANSITION},
     {"LaikadEphemerisV3", PERSISTENT | DONT_LOG},
+<<<<<<< HEAD
     {"LaneChangeTimer", PERSISTENT},
     {"LaneDetection", PERSISTENT},
     {"LaneLinesWidth", PERSISTENT},
+=======
+>>>>>>> parent of 17655632d (Nudgeless lane change + lane detection)
     {"LanguageSetting", PERSISTENT},
     {"LastAthenaPingTime", CLEAR_ON_MANAGER_START},
     {"LastGPSPosition", PERSISTENT},
@@ -177,18 +183,17 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"LiveTorqueCarParams", PERSISTENT},
     {"LiveTorqueParameters", PERSISTENT | DONT_LOG},
     {"LongitudinalPersonality", PERSISTENT},
-    {"MuteDM", PERSISTENT},
-    {"MuteDoor", PERSISTENT},
-    {"MuteSeatbelt", PERSISTENT},
-    {"MuteSystemOverheat", PERSISTENT},
     {"NavDestination", CLEAR_ON_MANAGER_START | CLEAR_ON_OFFROAD_TRANSITION},
     {"NavDestinationWaypoints", CLEAR_ON_MANAGER_START | CLEAR_ON_OFFROAD_TRANSITION},
     {"NavSettingLeftSide", PERSISTENT},
     {"NavSettingTime24h", PERSISTENT},
     {"NavdRender", PERSISTENT},
+<<<<<<< HEAD
     {"NNFF", PERSISTENT},
     {"NudgelessLaneChange", PERSISTENT},
     {"NumericalTemp", PERSISTENT},
+=======
+>>>>>>> parent of 17655632d (Nudgeless lane change + lane detection)
     {"ObdMultiplexingChanged", CLEAR_ON_MANAGER_START | CLEAR_ON_ONROAD_TRANSITION},
     {"ObdMultiplexingEnabled", CLEAR_ON_MANAGER_START | CLEAR_ON_ONROAD_TRANSITION},
     {"Offroad_BadNvme", CLEAR_ON_MANAGER_START},
@@ -204,10 +209,8 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"Offroad_TemperatureTooHigh", CLEAR_ON_MANAGER_START},
     {"Offroad_UnofficialHardware", CLEAR_ON_MANAGER_START},
     {"Offroad_UpdateFailed", CLEAR_ON_MANAGER_START},
-    {"OneLaneChange", PERSISTENT},
     {"OpenpilotEnabledToggle", PERSISTENT},
     {"PandaHeartbeatLost", CLEAR_ON_MANAGER_START | CLEAR_ON_OFFROAD_TRANSITION},
-    {"PandaLogState", PERSISTENT},
     {"PandaSignatures", CLEAR_ON_MANAGER_START},
     {"Passive", PERSISTENT},
     {"PathEdgeWidth", PERSISTENT},
@@ -216,13 +219,14 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"RecordFront", PERSISTENT},
     {"RecordFrontLock", PERSISTENT},  // for the internal fleet
     {"ReplayControlsState", CLEAR_ON_MANAGER_START | CLEAR_ON_ONROAD_TRANSITION},
+<<<<<<< HEAD
     {"ReverseCruiseIncrease", PERSISTENT},
     {"RoadEdgesWidth", PERSISTENT},
     {"RotatingWheel", PERSISTENT},
     {"ScreenBrightness", PERSISTENT},
+=======
+>>>>>>> parent of 17655632d (Nudgeless lane change + lane detection)
     {"ShouldDoUpdate", CLEAR_ON_MANAGER_START},
-    {"Sidebar", PERSISTENT},
-    {"SilentMode", PERSISTENT},
     {"SnoozeUpdate", CLEAR_ON_MANAGER_START | CLEAR_ON_OFFROAD_TRANSITION},
     {"SshEnabled", PERSISTENT},
     {"SteeringWheel", PERSISTENT},
@@ -235,7 +239,6 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"UbloxAvailable", PERSISTENT},
     {"UnlimitedLength", PERSISTENT},
     {"UpdateAvailable", CLEAR_ON_MANAGER_START | CLEAR_ON_ONROAD_TRANSITION},
-    {"Updated", PERSISTENT},
     {"UpdateFailedCount", CLEAR_ON_MANAGER_START},
     {"UpdaterAvailableBranches", CLEAR_ON_MANAGER_START},
     {"UpdaterCurrentDescription", CLEAR_ON_MANAGER_START},
@@ -247,8 +250,15 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"UpdaterTargetBranch", CLEAR_ON_MANAGER_START},
     {"Version", PERSISTENT},
     {"VisionRadarToggle", PERSISTENT},
-    {"WheeledBody", PERSISTENT},
-    {"WideCameraDisable", PERSISTENT},
+
+    // PFEIFER - AOL {{
+    {"AlwaysOnLateralEnabled", PERSISTENT},
+    {"AlwaysOnLateralType", PERSISTENT},
+    {"LateralAllowed", PERSISTENT},
+    {"LateralActive", CLEAR_ON_MANAGER_START | CLEAR_ON_ONROAD_TRANSITION},
+    {"DisengageLatOnBrake", PERSISTENT},
+    {"DisengageLatOnBlinker", PERSISTENT},
+    // }} PFEIFER - AOL
 };
 
 } // namespace
