@@ -17,16 +17,38 @@ FrogPilotControlsPanel::FrogPilotControlsPanel(QWidget *parent) : FrogPilotPanel
   mainLayout->addWidget(white_horizontal_line());
 
   static const std::vector<std::tuple<QString, QString, QString, QString>> toggles = {
+    {"ConditionalExperimentalMode", "Conditional Experimental Mode", "Automatically activate 'Experimental Mode' based on specified conditions.", "../assets/offroad/icon_conditional.png"},
+    {"CustomDrivingPersonalities", "Custom Driving Personalities", "Customize the driving personality profiles to your liking.", "../assets/offroad/icon_custom.png"},
     {"DeviceShutdownTimer", "Device Shutdown Timer", "Set the timer for when the device turns off after being offroad to reduce energy waste and prevent battery drain.", "../assets/offroad/icon_time.png"},
+    {"DrivingPersonalitiesUIWheel", "Driving Personalities Via UI / Wheel", "Switch driving personalities using the 'Distance' button on the steering wheel (Toyota/Lexus Only) or via the onroad UI for other makes.\n\n1 bar = Aggressive\n2 bars = Standard\n3 bars = Relaxed", "../assets/offroad/icon_distance.png"},
+    {"ExperimentalModeViaWheel", "Experimental Mode Via Steering Wheel / Screen", "Enable or disable Experimental Mode by double-clicking the 'Lane Departure'/LKAS button on the steering wheel (Toyota/Lexus Only) or double tapping the screen for other makes.\n\nOverrides 'Conditional Experimental Mode'. ", "../assets/img_experimental_white.svg"},
     {"FireTheBabysitter", "Fire the Babysitter", "Disable some of openpilot's 'Babysitter Protocols'.", "../assets/offroad/icon_babysitter.png"},
     {"LateralTuning", "Lateral Tuning", "Change the way openpilot steers.", "../assets/offroad/icon_lateral_tune.png"},
+    {"LongitudinalTuning", "Longitudinal Tuning", "Change the way openpilot accelerates and brakes.", "../assets/offroad/icon_longitudinal_tune.png"},
     {"NudgelessLaneChange", "Nudgeless Lane Change", "Switch lanes without having to nudge the steering wheel.", "../assets/offroad/icon_lane.png"},
     {"TurnDesires", "Turn Desires", "Use turn desires when below the minimum lane change speed for more precise turns.", "../assets/navigation/direction_continue_right.png"}
   };
 
   for (const auto &[key, label, desc, icon] : toggles) {
     ParamControl *control = createParamControl(key, label, desc, icon, this);
-    if (key == "DeviceShutdownTimer") {
+    if (key == "ConditionalExperimentalMode") {
+      createSubControl(key, label, desc, icon, {
+        createDualParamControl(new ConditionalExperimentalModeSpeed(), new ConditionalExperimentalModeSpeedLead()),
+      });
+      createSubButtonControl(key, {
+        {"ConditionalExperimentalModeCurves", "Curves"},
+        {"ConditionalExperimentalModeCurvesLead", "Curves W/ Lead"},
+        {"ConditionalExperimentalModeSlowerLead", "Slower Lead"},
+        {"ConditionalExperimentalModeStopLights", "Stop Lights"},
+        {"ConditionalExperimentalModeSignal", "Turn Signal"}
+      }, mainLayout);
+    } else if (key == "CustomDrivingPersonalities") {
+      createSubControl(key, label, desc, icon, {
+        createDualParamControl(new AggressivePersonalityValue(), new AggressiveJerkValue()),
+        createDualParamControl(new StandardPersonalityValue(), new StandardJerkValue()),
+        createDualParamControl(new RelaxedPersonalityValue(), new RelaxedJerkValue()),
+      });
+    } else if (key == "DeviceShutdownTimer") {
       mainLayout->addWidget(new DeviceShutdownTimer());
       mainLayout->addWidget(horizontal_line());
     } else if (key == "FireTheBabysitter") {
@@ -43,6 +65,15 @@ FrogPilotControlsPanel::FrogPilotControlsPanel(QWidget *parent) : FrogPilotPanel
       createSubControl(key, label, desc, icon, {}, {
         {"AverageDesiredCurvature", "Average Desired Curvature", "Use Pfeiferj's distance based curvature adjustment for smoother handling of curves."},
         {"NNFF", "NNFF - Neural Network Feedforward", "Use Twilsonco's Neural Network Feedforward torque system for more precise lateral control."}
+      });
+    } else if (key == "LongitudinalTuning") {
+      createSubControl(key, label, desc, icon, {
+        new AccelerationProfile(),
+        new IncreasedStoppingDistance(),
+      }, {
+        {"AggressiveAcceleration", "Aggressive Acceleration With Lead", "Accelerate more aggressively behind a lead when starting from a stop."},
+        {"SmootherBraking", "Smoother Braking Behind Lead", "More natural braking behavior when coming up to a slower vehicle."},
+        {"TSS2Tune", "TSS2 Tune", "Tuning profile for TSS2 vehicles. Based on the tuning profile from DragonPilot."}
       });
     } else if (key == "NudgelessLaneChange") {
       createSubControl(key, label, desc, icon, {
@@ -128,6 +159,9 @@ ParamControl *FrogPilotPanel::createParamControl(const QString &key, const QStri
       }
     }
     static const QMap<QString, QString> parameterWarnings = {
+      {"AggressiveAcceleration", "This will make openpilot driving more aggressively!"},
+      {"SmootherBraking", "This will modify openpilot's braking behavior!"},
+      {"TSS2Tune", "This will modify openpilot's acceleration and braking behavior!"}
     };
     if (parameterWarnings.contains(key) && params.getBool(key.toStdString())) {
       ConfirmationDialog::toggleAlert("WARNING: " + parameterWarnings[key], "I understand the risks.", parent);

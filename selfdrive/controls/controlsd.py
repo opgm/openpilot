@@ -121,7 +121,10 @@ class Controls:
 
     # FrogPilot variables
     frog_theme = self.params.get_bool("FrogTheme")
+    self.average_desired_curvature = self.CP.pfeiferjDesiredCurvatures
+    self.conditional_experimental_mode = self.CP.conditionalExperimentalMode
     self.frog_sounds = frog_theme and self.params.get_bool("FrogSounds")
+    self.reverse_cruise_increase = self.params.get_bool("ReverseCruiseIncrease")
 
     # detect sound card presence and ensure successful init
     sounds_available = HARDWARE.get_sound_card_online()
@@ -187,6 +190,7 @@ class Controls:
     self.experimental_mode = False
     self.v_cruise_helper = VCruiseHelper(self.CP)
     self.recalibrating_seen = False
+    self.nn_alert_shown = False
 
     # TODO: no longer necessary, aside from process replay
     self.sm['liveParameters'].valid = True
@@ -240,6 +244,14 @@ class Controls:
     # no more events while in dashcam mode
     if self.read_only:
       return
+
+    # show alert to indicate whether NNFF is loaded
+    if not self.nn_alert_shown and self.sm.frame % 1000 == 0 and self.CP.lateralTuning.which() == 'torque' and self.CP.twilsoncoNNFF:
+      self.nn_alert_shown = True
+      if self.LaC.use_nn:
+        self.events.add(EventName.torqueNNLoad)
+      else: 
+        self.events.add(EventName.torqueNNNotLoaded)
 
     # Block resume if cruise never previously enabled
     resume_pressed = any(be.type in (ButtonType.accelCruise, ButtonType.resumeCruise) for be in CS.buttonEvents)
@@ -591,6 +603,11 @@ class Controls:
     CC = car.CarControl.new_message()
     CC.enabled = self.enabled
 
+    # Check the value of "reverse_cruise_increase" just in case the user changed its value mid drive
+    if long_plan.frogpilotTogglesUpdated:
+      self.reverse_cruise_increase = self.params.get_bool("ReverseCruiseIncrease")
+    CC.reverseCruise = self.reverse_cruise_increase
+
     # Check which actuators can be enabled
     standstill = CS.vEgo <= max(self.CP.minSteerSpeed, MIN_LATERAL_CONTROL_SPEED) or CS.standstill
     CC.latActive = self.active and not CS.steerFaultTemporary and not CS.steerFaultPermanent and \
@@ -625,10 +642,13 @@ class Controls:
       self.desired_curvature, self.desired_curvature_rate = get_lag_adjusted_curvature(self.CP, CS.vEgo,
                                                                                        lat_plan.psis,
                                                                                        lat_plan.curvatures,
-                                                                                       lat_plan.curvatureRates)
+                                                                                       lat_plan.curvatureRates,
+                                                                                       long_plan.distances,
+                                                                                       self.average_desired_curvature)
       actuators.steer, actuators.steeringAngleDeg, lac_log = self.LaC.update(CC.latActive, CS, self.VM, lp,
                                                                              self.last_actuators, self.steer_limited, self.desired_curvature,
-                                                                             self.desired_curvature_rate, self.sm['liveLocationKalman'])
+                                                                             self.desired_curvature_rate, self.sm['liveLocationKalman'],
+                                                                             lat_plan=lat_plan, model_data=self.sm['modelV2'])
       actuators.curvature = self.desired_curvature
     else:
       lac_log = log.ControlsState.LateralDebugState.new_message()
@@ -856,7 +876,11 @@ class Controls:
     self.prof.checkpoint("Ratekeeper", ignore=True)
 
     self.is_metric = self.params.get_bool("IsMetric")
-    self.experimental_mode = self.params.get_bool("ExperimentalMode") and self.CP.openpilotLongitudinalControl
+    if self.CP.openpilotLongitudinalControl:
+      if self.conditional_experimental_mode:
+        self.experimental_mode = self.sm['longitudinalPlan'].conditionalExperimentalMode
+      else:
+        self.experimental_mode = self.params.get_bool("ExperimentalMode")
 
     # Sample data from sockets and get a carState
     CS = self.data_sample()

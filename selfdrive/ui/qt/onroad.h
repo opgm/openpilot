@@ -14,6 +14,9 @@ const int img_size = (btn_size / 4) * 3;
 
 // FrogPilot global variables
 static bool map_open;
+static bool reverseCruiseIncrease;
+static bool speedHidden;
+static int personalityProfile;
 
 
 // ***** onroad widgets *****
@@ -36,6 +39,7 @@ class ExperimentalButton : public QPushButton {
   Q_OBJECT
 
   // FrogPilot properties
+  Q_PROPERTY(int steeringWheel MEMBER steeringWheel);
 
 public:
   explicit ExperimentalButton(QWidget *parent = 0);
@@ -52,6 +56,8 @@ private:
   bool engageable;
 
   // FrogPilot variables
+  int steeringWheel;
+  std::map<int, QPixmap> wheel_images;
 
 };
 
@@ -88,9 +94,23 @@ class AnnotatedCameraWidget : public CameraWidget {
   // FrogPilot properties
   Q_PROPERTY(bool blindSpotLeft MEMBER blindSpotLeft);
   Q_PROPERTY(bool blindSpotRight MEMBER blindSpotRight);
+  Q_PROPERTY(bool compass MEMBER compass);
+  Q_PROPERTY(bool conditionalExperimental MEMBER conditionalExperimental);
   Q_PROPERTY(bool experimentalMode MEMBER experimentalMode);
   Q_PROPERTY(bool frogColors MEMBER frogColors);
+  Q_PROPERTY(bool frogSignals MEMBER frogSignals);
   Q_PROPERTY(bool muteDM MEMBER muteDM);
+  Q_PROPERTY(bool onroadAdjustableProfiles MEMBER onroadAdjustableProfiles);
+  Q_PROPERTY(bool rotatingWheel MEMBER rotatingWheel);
+  Q_PROPERTY(bool toyotaCar MEMBER toyotaCar);
+  Q_PROPERTY(bool turnSignalLeft MEMBER turnSignalLeft);
+  Q_PROPERTY(bool turnSignalRight MEMBER turnSignalRight);
+  Q_PROPERTY(int bearingDeg MEMBER bearingDeg);
+  Q_PROPERTY(int conditionalSpeed MEMBER conditionalSpeed);
+  Q_PROPERTY(int conditionalSpeedLead MEMBER conditionalSpeedLead);
+  Q_PROPERTY(int conditionalStatus MEMBER conditionalStatus);
+  Q_PROPERTY(int steeringAngleDeg MEMBER steeringAngleDeg);
+  Q_PROPERTY(int steeringWheel MEMBER steeringWheel);
 
 public:
   explicit AnnotatedCameraWidget(VisionStreamType type, QWidget* parent = 0);
@@ -102,6 +122,9 @@ private:
   void drawText(QPainter &p, int x, int y, const QString &text, int alpha = 255);
 
   // FrogPilot widgets
+  void drawCompass(QPainter &p);
+  void drawDrivingPersonalities(QPainter &p);
+  void drawFrogSignals(QPainter &p);
   void drawStatusBar(QPainter &p);
 
   QVBoxLayout *main_layout;
@@ -129,9 +152,31 @@ private:
   // FrogPilot variables
   bool blindSpotLeft;
   bool blindSpotRight;
+  bool compass;
+  bool conditionalExperimental;
   bool experimentalMode;
   bool frogColors;
+  bool frogSignals;
   bool muteDM;
+  bool onroadAdjustableProfiles;
+  bool rotatingWheel;
+  bool toyotaCar;
+  bool turnSignalLeft;
+  bool turnSignalRight;
+  int animationFrameIndex;
+  int bearingDeg;
+  int conditionalSpeed;
+  int conditionalSpeedLead;
+  int conditionalStatus;
+  int steeringAngleDeg;
+  int steeringWheel;
+  QPixmap compass_inner_img;
+  QPixmap engage_img;
+  QPixmap experimental_img;
+  QVector<std::pair<QPixmap, QString>> profile_data;
+  static constexpr int totalFrames = 8;
+  std::map<int, QPixmap> wheel_images;
+  std::vector<QPixmap> signalImgVector;
 
 protected:
   void paintGL() override;

@@ -212,12 +212,21 @@ static void update_state(UIState *s) {
   if (sm.updated("carParams")) {
     const auto carParams = sm["carParams"].getCarParams();
     scene.longitudinal_control = carParams.getOpenpilotLongitudinalControl();
+    if (scene.longitudinal_control) {
+      scene.conditional_experimental = carParams.getConditionalExperimentalMode();
+      scene.experimental_mode_via_wheel = carParams.getExperimentalModeViaWheel();
+      scene.driving_personalities_ui_wheel = carParams.getDrivingPersonalitiesUIWheel();
+    }
   }
   if (sm.updated("carState")) {
     const auto carState = sm["carState"].getCarState();
-    if (scene.blind_spot_path) {
+    if (scene.blind_spot_path || scene.frog_signals) {
       scene.blind_spot_left = carState.getLeftBlindspot();
       scene.blind_spot_right = carState.getRightBlindspot();
+    }
+    if (scene.frog_signals) {
+      scene.turn_signal_left = carState.getLeftBlinker();
+      scene.turn_signal_right = carState.getRightBlinker();
     }
     if (scene.blind_spot_path || scene.rotating_wheel) {
       scene.steering_angle_deg = carState.getSteeringAngleDeg();
@@ -233,6 +242,9 @@ static void update_state(UIState *s) {
   }
   if (sm.updated("gpsLocationExternal")) {
     const auto gpsLocationExternal = sm["gpsLocationExternal"].getGpsLocationExternal();
+    if (scene.compass) {
+      scene.bearing_deg = gpsLocationExternal.getBearingDeg();
+    }
   }
   if (sm.updated("lateralPlan")) {
     const auto lateralPlan = sm["lateralPlan"].getLateralPlan();
@@ -244,6 +256,9 @@ static void update_state(UIState *s) {
   if (sm.updated("longitudinalPlan")) {
     const auto longitudinalPlan = sm["longitudinalPlan"].getLongitudinalPlan();
     scene.frogpilot_toggles_updated = longitudinalPlan.getFrogpilotTogglesUpdated();
+    if (scene.conditional_experimental) {
+      scene.conditional_status = longitudinalPlan.getStatusValue();
+    }
   }
   if (sm.updated("wideRoadCameraState")) {
     auto cam_state = sm["wideRoadCameraState"].getWideRoadCameraState();
@@ -266,10 +281,14 @@ void ui_update_params(UIState *s) {
     scene.default_params_set = params.getBool("DefaultParamsSet");
   }
   if (!toggles_checked && scene.default_params_set) {
+    scene.compass = params.getBool("Compass");
+    scene.conditional_speed = params.getInt("ConditionalExperimentalModeSpeed");
+    scene.conditional_speed_lead = params.getInt("ConditionalExperimentalModeSpeedLead");
     scene.custom_road_ui = params.getBool("CustomRoadUI");
     scene.blind_spot_path = scene.custom_road_ui && params.getBool("BlindSpotPath");
     scene.frog_theme = params.getBool("FrogTheme");
     scene.frog_colors = scene.frog_theme && params.getBool("FrogColors");
+    scene.frog_signals = scene.frog_theme && params.getBool("FrogSignals");
     scene.lane_line_width = params.getInt("LaneLinesWidth") / 12.0 * 0.1524; // Convert from inches to meters
     scene.mute_dm = params.getBool("FireTheBabysitter") && params.getBool("MuteDM");
     scene.path_edge_width = params.getInt("PathEdgeWidth");
@@ -294,6 +313,10 @@ void ui_update_params(UIState *s) {
     }
   }
   if (scene.frogpilot_toggles_updated) {
+    if (scene.conditional_experimental) {
+      scene.conditional_speed = params.getInt("ConditionalExperimentalModeSpeed");
+      scene.conditional_speed_lead = params.getInt("ConditionalExperimentalModeSpeedLead");
+    }
     if (scene.custom_road_ui) {
       scene.lane_line_width = params.getInt("LaneLinesWidth") / 12.0 * 0.1524; // Convert from inches to meters
       scene.path_edge_width = params.getInt("PathEdgeWidth");

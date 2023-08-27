@@ -4,15 +4,12 @@ from cereal import car
 from common.conversions import Conversions as CV
 from common.numpy_fast import mean
 from common.filter_simple import FirstOrderFilter
+from common.params import Params, put_bool_nonblocking, put_int_nonblocking
 from common.realtime import DT_CTRL
 from opendbc.can.can_define import CANDefine
 from opendbc.can.parser import CANParser
 from selfdrive.car.interfaces import CarStateBase
 from selfdrive.car.toyota.values import ToyotaFlags, CAR, DBC, STEER_THRESHOLD, NO_STOP_TIMER_CAR, TSS2_CAR, RADAR_ACC_CAR, EPS_SCALE, UNSUPPORTED_DSU_CAR
-
-# PFEIFER - AOL {{
-from selfdrive.controls.always_on_lateral import AlwaysOnLateral, AlwaysOnLateralType
-# }} PFEIFER - AOL
 
 SteerControlType = car.CarParams.SteerControlType
 
@@ -23,6 +20,9 @@ SteerControlType = car.CarParams.SteerControlType
 # - initializing: LTA can report 0 as long as STEER_TORQUE_SENSOR->STEER_ANGLE_INITIALIZING is 1,
 #     and is a catch-all for LKA
 TEMP_STEER_FAULTS = (0, 9, 11, 21, 25)
+# - lka/lta msg drop out: 3 (recoverable)
+# - prolonged high driver torque: 17 (permanent)
+PERM_STEER_FAULTS = (3, 17)
 
 
 class CarState(CarStateBase):
@@ -44,9 +44,17 @@ class CarState(CarStateBase):
     self.acc_type = 1
     self.lkas_hud = {}
 
-    # PFEIFER - AOL {{
-    AlwaysOnLateral.set_always_on_lateral_type(AlwaysOnLateralType.CRUISE_STATE)
-    # }} PFEIFER - AOL
+    # FrogPilot variables
+    self.params = Params()
+    self.params_memory = Params("/dev/shm/params")
+    self.conditional_experimental_mode = self.CP.conditionalExperimentalMode
+    self.driving_personalities_via_wheel = self.CP.drivingPersonalitiesUIWheel
+    self.experimental_mode_via_wheel = self.CP.experimentalModeViaWheel
+    self.lkas_pressed = False
+    self.lkas_previously_pressed = False
+    self.distance_button = 0
+    self.distance_lines = 0
+    self.previous_distance_lines = 0
 
   def update(self, cp, cp_cam):
     ret = car.CarState.new_message()
@@ -109,13 +117,11 @@ class CarState(CarStateBase):
 
     # Check EPS LKA/LTA fault status
     ret.steerFaultTemporary = cp.vl["EPS_STATUS"]["LKA_STATE"] in TEMP_STEER_FAULTS
-    # 3 is a fault from the lka command message not being received by the EPS (recoverable)
-    # 17 is a fault from a prolonged high torque delta between cmd and user (permanent)
-    ret.steerFaultPermanent = cp.vl["EPS_STATUS"]["LKA_STATE"] in (3, 17)
+    ret.steerFaultPermanent = cp.vl["EPS_STATUS"]["LKA_STATE"] in PERM_STEER_FAULTS
 
     if self.CP.steerControlType == SteerControlType.angle:
       ret.steerFaultTemporary = ret.steerFaultTemporary or cp.vl["EPS_STATUS"]["LTA_STATE"] in TEMP_STEER_FAULTS
-      ret.steerFaultPermanent = ret.steerFaultPermanent or cp.vl["EPS_STATUS"]["LTA_STATE"] in (3,)
+      ret.steerFaultPermanent = ret.steerFaultPermanent or cp.vl["EPS_STATUS"]["LTA_STATE"] in PERM_STEER_FAULTS
 
     if self.CP.carFingerprint in UNSUPPORTED_DSU_CAR:
       # TODO: find the bit likely in DSU_CRUISE that describes an ACC fault. one may also exist in CLUTCH
@@ -139,7 +145,7 @@ class CarState(CarStateBase):
     if self.CP.carFingerprint in (TSS2_CAR | RADAR_ACC_CAR):
       if not (self.CP.flags & ToyotaFlags.SMART_DSU.value):
         self.acc_type = cp_acc.vl["ACC_CONTROL"]["ACC_TYPE"]
-      ret.stockFcw = bool(cp_acc.vl["ACC_HUD"]["FCW"])
+      ret.stockFcw = bool(cp_acc.vl["PCS_HUD"]["FCW"])
 
     # some TSS2 cars have low speed lockout permanently set, so ignore on those cars
     # these cars are identified by an ACC_TYPE value of 2.
@@ -169,48 +175,49 @@ class CarState(CarStateBase):
     if self.CP.carFingerprint != CAR.PRIUS_V:
       self.lkas_hud = copy.copy(cp_cam.vl["LKAS_HUD"])
 
+    # Driving personalities function
+    if self.driving_personalities_via_wheel:
+      if self.CP.carFingerprint in (TSS2_CAR - RADAR_ACC_CAR):
+        # KRKeegan - Add support for toyota distance button
+        self.distance_button = 1 if cp_cam.vl["ACC_CONTROL"]["DISTANCE"] == 1 else 0
+        # Need to subtract by 1 to comply with the personality profiles of "0", "1", and "2"
+        self.distance_lines = max(cp.vl["PCM_CRUISE_SM"]["DISTANCE_LINES"] - 1, 0)
+
+      if self.CP.carFingerprint in RADAR_ACC_CAR:
+        # These cars have the acc_control on car can
+        self.distance_button = 1 if cp.vl["ACC_CONTROL"]["DISTANCE"] == 1 else 0
+        # Need to subtract by 1 to comply with the personality profiles of "0", "1", and "2"
+        self.distance_lines = max(cp.vl["PCM_CRUISE_SM"]["DISTANCE_LINES"] - 1, 0)
+
+      if self.distance_lines != self.previous_distance_lines:
+        put_int_nonblocking("LongitudinalPersonality", self.distance_lines)
+        self.previous_distance_lines = self.distance_lines
+        self.params_memory.put_bool("FrogPilotTogglesUpdated", True)
+
+    # Toggle Experimental Mode from steering wheel function
+    if self.experimental_mode_via_wheel and ret.cruiseState.enabled:
+      message_keys = ["LDA_ON_MESSAGE", "LKAS_STATUS", "SET_ME_X02"]
+      self.lkas_pressed = any(cp_cam.vl["LKAS_HUD"].get(key) == 1 for key in message_keys)
+      if self.lkas_pressed and not self.lkas_previously_pressed:
+        if self.conditional_experimental_mode:
+          # Set "ConditionalStatus" to work with "Conditional Experimental Mode"
+          conditional_status = self.params_memory.get_int("ConditionalStatus")
+          override_value = 0 if conditional_status in [1, 2] else 1 if conditional_status >= 2 else 2
+          self.params_memory.put_int("ConditionalStatus", override_value)
+        else:
+          experimental_mode = self.params.get_bool("ExperimentalMode")
+          # Invert the value of "ExperimentalMode"
+          put_bool_nonblocking("ExperimentalMode", not experimental_mode)
+      self.lkas_previously_pressed = self.lkas_pressed
+
+    # For configuring onroad statuses
+    ret.toyotaCar = True
+
     return ret
 
   @staticmethod
   def get_can_parser(CP):
-    signals = [
-      # sig_name, sig_address
-      ("STEER_ANGLE", "STEER_ANGLE_SENSOR"),
-      ("GEAR", "GEAR_PACKET"),
-      ("BRAKE_PRESSED", "BRAKE_MODULE"),
-      ("WHEEL_SPEED_FL", "WHEEL_SPEEDS"),
-      ("WHEEL_SPEED_FR", "WHEEL_SPEEDS"),
-      ("WHEEL_SPEED_RL", "WHEEL_SPEEDS"),
-      ("WHEEL_SPEED_RR", "WHEEL_SPEEDS"),
-      ("DOOR_OPEN_FL", "BODY_CONTROL_STATE"),
-      ("DOOR_OPEN_FR", "BODY_CONTROL_STATE"),
-      ("DOOR_OPEN_RL", "BODY_CONTROL_STATE"),
-      ("DOOR_OPEN_RR", "BODY_CONTROL_STATE"),
-      ("SEATBELT_DRIVER_UNLATCHED", "BODY_CONTROL_STATE"),
-      ("PARKING_BRAKE", "BODY_CONTROL_STATE"),
-      ("UNITS", "BODY_CONTROL_STATE_2"),
-      ("TC_DISABLED", "ESP_CONTROL"),
-      ("BRAKE_HOLD_ACTIVE", "ESP_CONTROL"),
-      ("STEER_FRACTION", "STEER_ANGLE_SENSOR"),
-      ("STEER_RATE", "STEER_ANGLE_SENSOR"),
-      ("CRUISE_ACTIVE", "PCM_CRUISE"),
-      ("CRUISE_STATE", "PCM_CRUISE"),
-      ("GAS_RELEASED", "PCM_CRUISE"),
-      ("UI_SET_SPEED", "PCM_CRUISE_SM"),
-      ("STEER_TORQUE_DRIVER", "STEER_TORQUE_SENSOR"),
-      ("STEER_TORQUE_EPS", "STEER_TORQUE_SENSOR"),
-      ("STEER_ANGLE", "STEER_TORQUE_SENSOR"),
-      ("STEER_ANGLE_INITIALIZING", "STEER_TORQUE_SENSOR"),
-      ("TURN_SIGNALS", "BLINKERS_STATE"),
-      ("LKA_STATE", "EPS_STATUS"),
-      ("AUTO_HIGH_BEAM", "LIGHT_STALK"),
-    ]
-
-    # Check LTA state if using LTA angle control
-    if CP.steerControlType == SteerControlType.angle:
-      signals.append(("LTA_STATE", "EPS_STATUS"))
-
-    checks = [
+    messages = [
       ("GEAR_PACKET", 1),
       ("LIGHT_STALK", 1),
       ("BLINKERS_STATE", 0.15),
@@ -227,94 +234,53 @@ class CarState(CarStateBase):
     ]
 
     if CP.flags & ToyotaFlags.HYBRID:
-      signals.append(("GAS_PEDAL", "GAS_PEDAL_HYBRID"))
-      checks.append(("GAS_PEDAL_HYBRID", 33))
+      messages.append(("GAS_PEDAL_HYBRID", 33))
     else:
-      signals.append(("GAS_PEDAL", "GAS_PEDAL"))
-      checks.append(("GAS_PEDAL", 33))
+      messages.append(("GAS_PEDAL", 33))
 
     if CP.carFingerprint in UNSUPPORTED_DSU_CAR:
-      signals.append(("MAIN_ON", "DSU_CRUISE"))
-      signals.append(("SET_SPEED", "DSU_CRUISE"))
-      signals.append(("UI_SET_SPEED", "PCM_CRUISE_ALT"))
-      checks.append(("DSU_CRUISE", 5))
-      checks.append(("PCM_CRUISE_ALT", 1))
+      messages.append(("DSU_CRUISE", 5))
+      messages.append(("PCM_CRUISE_ALT", 1))
     else:
-      signals.append(("MAIN_ON", "PCM_CRUISE_2"))
-      signals.append(("SET_SPEED", "PCM_CRUISE_2"))
-      signals.append(("ACC_FAULTED", "PCM_CRUISE_2"))
-      signals.append(("LOW_SPEED_LOCKOUT", "PCM_CRUISE_2"))
-      checks.append(("PCM_CRUISE_2", 33))
+      messages.append(("PCM_CRUISE_2", 33))
 
     # add gas interceptor reading if we are using it
     if CP.enableGasInterceptor:
-      signals.append(("INTERCEPTOR_GAS", "GAS_SENSOR"))
-      signals.append(("INTERCEPTOR_GAS2", "GAS_SENSOR"))
-      checks.append(("GAS_SENSOR", 50))
+      messages.append(("GAS_SENSOR", 50))
 
     if CP.enableBsm:
-      signals += [
-        ("L_ADJACENT", "BSM"),
-        ("L_APPROACHING", "BSM"),
-        ("R_ADJACENT", "BSM"),
-        ("R_APPROACHING", "BSM"),
-      ]
-      checks.append(("BSM", 1))
+      messages.append(("BSM", 1))
 
     if CP.carFingerprint in RADAR_ACC_CAR:
       if not CP.flags & ToyotaFlags.SMART_DSU.value:
-        signals += [
-          ("ACC_TYPE", "ACC_CONTROL"),
-        ]
-        checks += [
+        messages += [
           ("ACC_CONTROL", 33),
         ]
-      signals += [
-        ("FCW", "ACC_HUD"),
-      ]
-      checks += [
-        ("ACC_HUD", 1),
+      messages += [
+        ("PCS_HUD", 1),
       ]
 
     if CP.carFingerprint not in (TSS2_CAR - RADAR_ACC_CAR) and not CP.enableDsu:
-      signals += [
-        ("FORCE", "PRE_COLLISION"),
-        ("PRECOLLISION_ACTIVE", "PRE_COLLISION"),
-      ]
-      checks += [
+      messages += [
         ("PRE_COLLISION", 33),
       ]
 
-    return CANParser(DBC[CP.carFingerprint]["pt"], signals, checks, 0)
+    return CANParser(DBC[CP.carFingerprint]["pt"], messages, 0)
 
   @staticmethod
   def get_cam_can_parser(CP):
-    signals = []
-    checks = []
+    messages = []
 
     if CP.carFingerprint != CAR.PRIUS_V:
-      signals += [
-        ("LANE_SWAY_FLD", "LKAS_HUD"),
-        ("LANE_SWAY_BUZZER", "LKAS_HUD"),
-        ("LANE_SWAY_WARNING", "LKAS_HUD"),
-        ("LANE_SWAY_SENSITIVITY", "LKAS_HUD"),
-        ("LANE_SWAY_TOGGLE", "LKAS_HUD"),
-      ]
-      checks += [
+      messages += [
         ("LKAS_HUD", 1),
       ]
 
     if CP.carFingerprint in (TSS2_CAR - RADAR_ACC_CAR):
-      signals += [
-        ("PRECOLLISION_ACTIVE", "PRE_COLLISION"),
-        ("FORCE", "PRE_COLLISION"),
-        ("ACC_TYPE", "ACC_CONTROL"),
-        ("FCW", "ACC_HUD"),
-      ]
-      checks += [
+      messages += [
         ("PRE_COLLISION", 33),
         ("ACC_CONTROL", 33),
-        ("ACC_HUD", 1),
+        ("PCS_HUD", 1),
       ]
 
-    return CANParser(DBC[CP.carFingerprint]["pt"], signals, checks, 2)
+    return CANParser(DBC[CP.carFingerprint]["pt"], messages, 2)
