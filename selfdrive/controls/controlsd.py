@@ -20,7 +20,7 @@ from openpilot.common.swaglog import cloudlog
 from openpilot.selfdrive.car.car_helpers import get_startup_event
 from openpilot.selfdrive.car.card import CarD
 from openpilot.selfdrive.controls.lib.alertmanager import AlertManager, set_offroad_alert
-from openpilot.selfdrive.controls.lib.drive_helpers import VCruiseHelper, clip_curvature
+from openpilot.selfdrive.controls.lib.drive_helpers import VCruiseHelper, clip_curvature, CRUISE_LONG_PRESS
 from openpilot.selfdrive.controls.lib.events import Events, ET
 from openpilot.selfdrive.controls.lib.latcontrol import LatControl, MIN_LATERAL_CONTROL_SPEED
 from openpilot.selfdrive.controls.lib.latcontrol_pid import LatControlPID
@@ -174,6 +174,7 @@ class Controls:
     # PFEIFER - AOL {{
     self.aol = AlwaysOnLateral(self)
     # }} PFEIFER - AOL
+    self.gap_counter = 0
 
 
   def set_initial_state(self):
@@ -670,8 +671,16 @@ class Controls:
     # decrement personality on distance button press
     if self.CP.openpilotLongitudinalControl:
       if any(not be.pressed and be.type == ButtonType.gapAdjustCruise for be in CS.buttonEvents):
+        self.gap_counter += 1
+      if self.gap_counter >= CRUISE_LONG_PRESS:
+        self.experimental_mode = not self.experimental_mode
+        self.params.put_nonblocking("ExperimentalMode", int(self.experimental_mode))
+        self.gap_counter = 0
+      elif 0 < self.gap_counter < CRUISE_LONG_PRESS and not any(
+        not be.pressed and be.type == ButtonType.gapAdjustCruise for be in CS.buttonEvents):
         self.personality = (self.personality - 1) % 3
         self.params.put_nonblocking('LongitudinalPersonality', str(self.personality))
+        self.gap_counter = 0
 
     return CC, lac_log
 
