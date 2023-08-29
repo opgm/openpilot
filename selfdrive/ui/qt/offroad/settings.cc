@@ -80,32 +80,32 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
       .arg(tr("When enabled lateral control will remain engaged after longitudinal is disengaged. Main cruise button toggles lateral control off.")),
       "../assets/img_experimental_white.svg",
     },
-    {
-      "AlwaysOnLateralMainEnables",
-      tr("Main cruise engages AOL"),
-      QString("<b>%1</b><br><br>%2")
-      .arg(tr("WARNING: Engaging lateral upon toggling main cruise likely has issues with many cars. You may receive cruise faults upon pressing the main cruise button. Please test in a safe environment before using on road."))
-      .arg(tr("Engages Always on Lateral whenever main is pressed.")),
-      "../assets/img_experimental_white.svg",
-    },
-    {
-      "DisengageLatOnBrake",
-      tr("Disengage Lateral on Brake Pedal"),
-      tr("Disables lateral while the brake is being applied. Only changes behavior of Always on Lateral."),
-      "../assets/img_experimental_white.svg",
-    },
-    {
-      "DisengageLatOnBlinker",
-      tr("Disengage Lateral on Blinker"),
-      tr("Disables lateral while a blinker is activated. Only changes behavior of Always on Lateral."),
-      "../assets/img_experimental_white.svg",
-    },
-    {
-      "DisengageLatOnLowSpeedBlinker",
-      tr("Disengage Lateral on Low Speed Blinker"),
-      tr("Disables lateral while a blinker is activated and we are below LatBlinkerLowSpeedLimit (default 25mph). If 'Disengage Lateral on Blinker' is also enabled lateral will still be disabled at all speeds. Only changes behavior of Always on Lateral."),
-      "../assets/img_experimental_white.svg",
-    },
+//    {
+//      "AlwaysOnLateralMainEnables",
+//      tr("Main cruise engages AOL"),
+//      QString("<b>%1</b><br><br>%2")
+//      .arg(tr("WARNING: Engaging lateral upon toggling main cruise likely has issues with many cars. You may receive cruise faults upon pressing the main cruise button. Please test in a safe environment before using on road."))
+//      .arg(tr("Engages Always on Lateral whenever main is pressed.")),
+//      "../assets/img_experimental_white.svg",
+//    },
+//    {
+//      "DisengageLatOnBrake",
+//      tr("Disengage Lateral on Brake Pedal"),
+//      tr("Disables lateral while the brake is being applied. Only changes behavior of Always on Lateral."),
+//      "../assets/img_experimental_white.svg",
+//    },
+//    {
+//      "DisengageLatOnBlinker",
+//      tr("Disengage Lateral on Blinker"),
+//      tr("Disables lateral while a blinker is activated. Only changes behavior of Always on Lateral."),
+//      "../assets/img_experimental_white.svg",
+//    },
+//    {
+//      "DisengageLatOnLowSpeedBlinker",
+//      tr("Disengage Lateral on Low Speed Blinker"),
+//      tr("Disables lateral while a blinker is activated and we are below LatBlinkerLowSpeedLimit (default 25mph). If 'Disengage Lateral on Blinker' is also enabled lateral will still be disabled at all speeds. Only changes behavior of Always on Lateral."),
+//      "../assets/img_experimental_white.svg",
+//    },
     // }} PFEIFER - AOL
 #ifdef ENABLE_MAPS
     {
@@ -151,7 +151,7 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
   toggles["ExperimentalLongitudinalEnabled"]->setConfirmation(true, false);
   // PFEIFER - AOL {{
   toggles["AlwaysOnLateralEnabled"]->setConfirmation(true, true);
-  toggles["AlwaysOnLateralMainEnables"]->setConfirmation(true, true);
+//  toggles["AlwaysOnLateralMainEnables"]->setConfirmation(true, true);
   // }} PFEIFER - AOL
 
   connect(toggles["ExperimentalLongitudinalEnabled"], &ToggleControl::toggleFlipped, [=]() {
@@ -195,16 +195,16 @@ void TogglesPanel::updateToggles() {
   // AlwaysOnLateralMainEnables and DisengageLatOnBrake will cause errors if toggled on-road
   // DisengageLatOnBlinker and DisengageLatOnBrake are disabled so we do not need to read them from the fs on each controls loop
   auto aol_toggle = toggles["AlwaysOnLateralEnabled"];
-  auto aol_main_toggle = toggles["AlwaysOnLateralMainEnables"];
-  auto dlobrake_toggle = toggles["DisengageLatOnBrake"];
-  auto dloblinker_toggle = toggles["DisengageLatOnBlinker"];
-  auto dlolsblinker_toggle = toggles["DisengageLatOnLowSpeedBlinker"];
+//  auto aol_main_toggle = toggles["AlwaysOnLateralMainEnables"];
+//  auto dlobrake_toggle = toggles["DisengageLatOnBrake"];
+//  auto dloblinker_toggle = toggles["DisengageLatOnBlinker"];
+//  auto dlolsblinker_toggle = toggles["DisengageLatOnLowSpeedBlinker"];
   bool aol_locked = params.getBool("AlwaysOnLateralEnabledLock");
   aol_toggle->setEnabled(!aol_locked);
-  aol_main_toggle->setEnabled(!aol_locked);
-  dlobrake_toggle->setEnabled(!aol_locked);
-  dloblinker_toggle->setEnabled(!aol_locked);
-  dlolsblinker_toggle->setEnabled(!aol_locked);
+//  aol_main_toggle->setEnabled(!aol_locked);
+//  dlobrake_toggle->setEnabled(!aol_locked);
+//  dloblinker_toggle->setEnabled(!aol_locked);
+//  dlolsblinker_toggle->setEnabled(!aol_locked);
   // }} PFEIFER - AOL
 
   const bool is_release = params.getBool("IsReleaseBranch");
