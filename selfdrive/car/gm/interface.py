@@ -113,7 +113,7 @@ class CarInterface(CarInterfaceBase):
 
     else:  # ASCM, OBD-II harness
       ret.openpilotLongitudinalControl = True
-      ret.networkLocation = NetworkLocation.gateway
+      ret.networkLocation = NetworkLocation.fwdCamera
       ret.radarUnavailable = RADAR_HEADER_MSG not in fingerprint[CanBus.OBSTACLE] and not docs
       ret.pcmCruise = False  # stock non-adaptive cruise control is kept off
       # supports stop and go, but initial engage must (conservatively) be above 18mph

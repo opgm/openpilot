@@ -509,12 +509,12 @@ class CarStateBase(ABC):
     return bool(left_blinker_stalk or self.left_blinker_cnt > 0), bool(right_blinker_stalk or self.right_blinker_cnt > 0)
 
   def update_personality(self, distance_button_pressed: bool) -> None:
-    self.distance_button_timer = self.distance_button_timer + 1 if distance_button_pressed else 0
     if self.distance_button_timer == CRUISE_LONG_PRESS:
       put_bool_nonblocking("ExperimentalMode", not self.params.get_bool("ExperimentalMode"))
-    elif not distance_button_pressed and self.distance_button_timer > 0:  # falling edge
+    elif not distance_button_pressed and self.distance_button_timer > 0 and self.distance_button_timer < CRUISE_LONG_PRESS:  # falling edge
       self.longitudinal_personality = (self.longitudinal_personality - 1) % 3
       put_nonblocking("LongitudinalPersonality", str(self.longitudinal_personality))
+    self.distance_button_timer = self.distance_button_timer + 1 if distance_button_pressed else 0
 
   @staticmethod
   def parse_gear_shifter(gear: Optional[str]) -> car.CarState.GearShifter:
