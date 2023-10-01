@@ -1,7 +1,7 @@
 {
-    "acados_include_path": "/data/openpilot/third_party/acados/include",
-    "acados_lib_path": "/data/openpilot/third_party/acados/lib",
-    "code_export_directory": "/data/openpilot/selfdrive/controls/lib/longitudinal_mpc_lib/c_generated_code",
+    "acados_include_path": "/home/aaron/lehrian/openpilot/third_party/acados/include",
+    "acados_lib_path": "/home/aaron/lehrian/openpilot/third_party/acados/lib",
+    "code_export_directory": "/home/aaron/lehrian/openpilot/selfdrive/controls/lib/longitudinal_mpc_lib/c_generated_code",
     "constraints": {
         "C": [],
         "C_e": [],
@@ -306,8 +306,8 @@
         "zu_e": []
     },
     "cython_include_dirs": [
-        "/usr/local/pyenv/versions/3.11.4/lib/python3.11/site-packages/numpy/core/include",
-        "/usr/local/pyenv/versions/3.11.4/include/python3.11"
+        "/home/aaron/openpilot/.venv/lib/python3.11/site-packages/numpy/core/include",
+        "/home/aaron/.pyenv/versions/3.11.4/include/python3.11"
     ],
     "dims": {
         "N": 12,
@@ -343,7 +343,7 @@
         "ny_e": 5,
         "nz": 0
     },
-    "json_file": "/data/openpilot/selfdrive/controls/lib/longitudinal_mpc_lib/acados_ocp_long.json",
+    "json_file": "/home/aaron/lehrian/openpilot/selfdrive/controls/lib/longitudinal_mpc_lib/acados_ocp_long.json",
     "model": {
         "con_h_expr": "jhpnnagiieahaaaadaaaaaaaaaaaaaaaaaegiaaaaaaaaaaaaaaaeaaaaaaaaaaaaaaabaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaeaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabaaaaaaaaaaaaaaacaaaaaaaaaaaaaaadaaaaaaaaaaaaaaaeaaaaaaaaaaaaaaaegpcaaaaaaaaaaaaaafaaaaaaaghpffghgpgegcaaaaaaaaaaaaaaaegpcaaaaaaaaaaaaaafaaaaaaabgpffghgpgegpcaaaaaaaaaaaaaafaaaaaaabgpfngjgogegcaaaaaaaaaaaaaaaegpcaaaaaaaaaaaaaafaaaaaaabgpfngbgihchcaaaaaaaaaaaaaaaegeaaaaaaaaaaaaaaaegcaaaaaaaaaaaaaaaegcaaaaaaaaaaaaaaaegpcaaaaaaaaaaaaaakaaaaaaaihpfpgcgdhehbgdgmgfgegpcaaaaaaaaaaaaaafaaaaaaaihpffghgpgegdaaaaaaaaaaaaaaaegpcaaaaaaaaaaaaaacbaaaaaamgfgbgegpfegbgoghgfgchpfggbgdgehpgchegbaaaaaaaaaaaaaaaegbaaaaaaaaaaaaaaaegeaaaaaaaaaaaaaaaeglaaaaaaaaaaaaaaachbaaaaaaaaaaaaaaaegmcaaaaaaaaaaaaaajgfaaaaaaaegdaaaaaaaaaaaaaaaegpcaaaaaaaaaaaaaanaaaaaaamgfgbgegpfehpfggpgmgmgpghhchbaaaaaaaaaaaaaaaegmcaaaaaaaaaaaaaajggaaaaaaaegbaaaaaaaaaaaaaaachbaaaaaaaaaaaaaaaegmcaaaaaaaaaaaaaajgkaaaaaaa",
         "con_h_expr_e": null,
