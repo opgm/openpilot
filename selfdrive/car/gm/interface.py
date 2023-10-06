@@ -369,10 +369,9 @@ class CarInterface(CarInterfaceBase):
 
     if (self.CP.flags & GMFlags.PEDAL_LONG.value) and \
       self.CP.transmissionType == TransmissionType.direct and \
-      not self.CS.single_pedal_mode:
-      aol_active = c.latActive and not c.enabled
-      if not aol_active:
-        events.add(EventName.pedalInterceptorNoBrake)
+      not self.CS.single_pedal_mode and \
+      c.longActive:
+      events.add(EventName.pedalInterceptorNoBrake)
 
     ret.events = events.to_msg()
 
