@@ -80,7 +80,6 @@ class CAR:
   VOLT = "CHEVROLET VOLT PREMIER 2017"
   CADILLAC_ATS = "CADILLAC ATS Premium Performance 2018"
   MALIBU = "CHEVROLET MALIBU PREMIER 2017"
-  CTS_CC = "CTSV 2017"
   ACADIA = "GMC ACADIA DENALI 2018"
   BUICK_LACROSSE = "BUICK LACROSSE 2017"
   BUICK_REGAL = "BUICK REGAL ESSENCE 2018"
@@ -93,6 +92,7 @@ class CAR:
   # Separate car def is required when there is no ASCM
   # (for now) unless there is a way to detect it when it has been unplugged...
   VOLT_CC = "CHEVROLET VOLT NO ACC"
+  CTS_CC = "CTSV 2017"
   BOLT_CC = "CHEVROLET BOLT EV NO ACC"
   EQUINOX_CC = "CHEVROLET EQUINOX NO ACC"
   SUBURBAN = "CHEVROLET SUBURBAN PREMIER 2016"
@@ -124,7 +124,6 @@ CAR_INFO: Dict[str, Union[GMCarInfo, List[GMCarInfo]]] = {
   CAR.VOLT: GMCarInfo("Chevrolet Volt 2017-18", min_enable_speed=0, video_link="https://youtu.be/QeMCN_4TFfQ"),
   CAR.CADILLAC_ATS: GMCarInfo("Cadillac ATS Premium Performance 2018"),
   CAR.MALIBU: GMCarInfo("Chevrolet Malibu Premier 2017"),
-  CAR.CTS_CC: GMCarInfo("Cadillac CTSV 2016"),
   CAR.ACADIA: GMCarInfo("GMC Acadia 2018", video_link="https://www.youtube.com/watch?v=0ZN6DdsBUZo"),
   CAR.BUICK_LACROSSE: GMCarInfo("Buick LaCrosse 2017-19", "Driver Confidence Package 2"),
   CAR.BUICK_REGAL: GMCarInfo("Buick Regal Essence 2018"),
@@ -142,6 +141,7 @@ CAR_INFO: Dict[str, Union[GMCarInfo, List[GMCarInfo]]] = {
   CAR.TRAILBLAZER: GMCarInfo("Chevrolet Trailblazer 2021-22"),
 
   CAR.VOLT_CC: GMCarInfo("Chevrolet Volt No ACC"),
+  CAR.CTS_CC: GMCarInfo("Cadillac CTSV 2016 No ACC"),
   CAR.BOLT_CC: GMCarInfo("Chevrolet Bolt No ACC"),
   CAR.EQUINOX_CC: GMCarInfo("Chevrolet Equinox No ACC"),
   CAR.SUBURBAN: GMCarInfo("Chevrolet Suburban Premier 2016-2020"),
@@ -362,9 +362,9 @@ DBC[CAR.VOLT] = dbc_dict('gm_global_a_powertrain_volt', 'gm_global_a_object', ch
 DBC[CAR.VOLT_CC] = DBC[CAR.VOLT]
 
 EV_CAR = {CAR.VOLT, CAR.BOLT_EUV, CAR.VOLT_CC, CAR.BOLT_CC}
-CC_ONLY_CAR = {CAR.VOLT_CC, CAR.BOLT_CC, CAR.EQUINOX_CC, CAR.SUBURBAN_CC, CAR.YUKON_CC}
+CC_ONLY_CAR = {CAR.VOLT_CC, CAR.BOLT_CC, CAR.EQUINOX_CC, CAR.SUBURBAN_CC, CAR.YUKON_CC, CAR.CTS_CC}
 
 # We're integrated at the camera with VOACC on these cars (instead of ASCM w/ OBD-II harness)
-CAMERA_ACC_CAR = {CAR.BOLT_EUV, CAR.SILVERADO, CAR.EQUINOX, CAR.TRAILBLAZER, CAR.VOLT_CC, CAR.BOLT_CC, CAR.EQUINOX_CC, CAR.YUKON_CC}
+CAMERA_ACC_CAR = {CAR.BOLT_EUV, CAR.SILVERADO, CAR.EQUINOX, CAR.TRAILBLAZER, CAR.VOLT_CC, CAR.BOLT_CC, CAR.EQUINOX_CC, CAR.YUKON_CC, CAR.CTS_CC}
 
 STEER_THRESHOLD = 1.0
