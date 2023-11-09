@@ -120,6 +120,8 @@ struct CarEvent @0x9b1657f34caf3ad3 {
 
     torqueNNLoad @120;
 
+    pedalInterceptorNoBrake @121;
+
     radarCanErrorDEPRECATED @15;
     communityFeatureDisallowedDEPRECATED @62;
     radarCommIssueDEPRECATED @67;
