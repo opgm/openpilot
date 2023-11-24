@@ -134,7 +134,15 @@ static void honda_rx_hook(CANPacket_t *to_push) {
     acc_main_on = GET_BIT(to_push, ((addr == 0x326) ? 28U : 47U));
     if (!acc_main_on) {
       controls_allowed = false;
-    }
+    // PFEIFER - AOL {{
+        lateral_controls_allowed = false;
+        // }} PFEIFER - AOL
+      }
+      // PFEIFER - AOL {{
+      if(alternative_experience & ALT_EXP_AOL_ENABLE_ON_MAIN) {
+        lateral_controls_allowed = acc_main_on;
+      }
+      // }} PFEIFER - AOL
   }
 
   // enter controls when PCM enters cruise state
@@ -311,7 +319,10 @@ static bool honda_tx_hook(CANPacket_t *to_send) {
 
   // STEER: safety check
   if ((addr == 0xE4) || (addr == 0x194)) {
-    if (!controls_allowed) {
+    // if (!controls_allowed) {
+    // PFEIFER - AOL {{
+    if (!lateral_controls_allowed) {
+    // }} PFEIFER - AOL
       bool steer_applied = GET_BYTE(to_send, 0) | GET_BYTE(to_send, 1);
       if (steer_applied) {
         tx = 0;

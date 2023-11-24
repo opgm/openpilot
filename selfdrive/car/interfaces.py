@@ -327,6 +327,10 @@ class CarStateBase(ABC):
     self.car_fingerprint = CP.carFingerprint
     self.out = car.CarState.new_message()
 
+    # PFEIFER - AOL {{
+    self.lateral_allowed = False
+    # }} PFEIFER - AOL
+
     self.cruise_buttons = 0
     self.left_blinker_cnt = 0
     self.right_blinker_cnt = 0

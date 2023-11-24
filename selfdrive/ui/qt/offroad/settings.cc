@@ -71,6 +71,42 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
       tr("Display speed in km/h instead of mph."),
       "../assets/offroad/icon_metric.png",
     },
+    // PFEIFER - AOL {{
+    {
+      "AlwaysOnLateralEnabled",
+      tr("Always on Lateral"),
+      QString("<b>%1</b><br><br>%2")
+      .arg(tr("WARNING: Always on lateral has not been tested on all cars. You may receive cruise faults when disabling longitudinal control if this is not compatible with your car. Please test in a safe environment before using on road."))
+      .arg(tr("When enabled lateral control will remain engaged after longitudinal is disengaged. Main cruise button toggles lateral control off.")),
+      "../assets/img_experimental_white.svg",
+    },
+    {
+      "AlwaysOnLateralMainEnables",
+      tr("Main cruise engages AOL"),
+      QString("<b>%1</b><br><br>%2")
+      .arg(tr("WARNING: Engaging lateral upon toggling main cruise likely has issues with many cars. You may receive cruise faults upon pressing the main cruise button. Please test in a safe environment before using on road."))
+      .arg(tr("Engages Always on Lateral whenever main is pressed.")),
+      "../assets/img_experimental_white.svg",
+    },
+    {
+      "DisengageLatOnBrake",
+      tr("Disengage Lateral on Brake Pedal"),
+      tr("Disables lateral while the brake is being applied. Only changes behavior of Always on Lateral."),
+      "../assets/img_experimental_white.svg",
+    },
+    {
+      "DisengageLatOnBlinker",
+      tr("Disengage Lateral on Blinker"),
+      tr("Disables lateral while a blinker is activated. Only changes behavior of Always on Lateral."),
+      "../assets/img_experimental_white.svg",
+    },
+    {
+      "DisengageLatOnLowSpeedBlinker",
+      tr("Disengage Lateral on Low Speed Blinker"),
+      tr("Disables lateral while a blinker is activated and we are below LatBlinkerLowSpeedLimit (default 25mph). If 'Disengage Lateral on Blinker' is also enabled lateral will still be disabled at all speeds. Only changes behavior of Always on Lateral."),
+      "../assets/img_experimental_white.svg",
+    },
+    // }} PFEIFER - AOL
 #ifdef ENABLE_MAPS
     {
       "NavSettingTime24h",
@@ -113,6 +149,10 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
   toggles["ExperimentalMode"]->setActiveIcon("../assets/img_experimental.svg");
   toggles["ExperimentalMode"]->setConfirmation(true, true);
   toggles["ExperimentalLongitudinalEnabled"]->setConfirmation(true, false);
+  // PFEIFER - AOL {{
+  toggles["AlwaysOnLateralEnabled"]->setConfirmation(true, true);
+  toggles["AlwaysOnLateralMainEnables"]->setConfirmation(true, true);
+  // }} PFEIFER - AOL
 
   connect(toggles["ExperimentalLongitudinalEnabled"], &ToggleControl::toggleFlipped, [=]() {
     updateToggles();
@@ -149,6 +189,23 @@ void TogglesPanel::updateToggles() {
                                   .arg(tr("New Driving Visualization"))
                                   .arg(tr("The driving visualization will transition to the road-facing wide-angle camera at low speeds to better show some turns. The Experimental mode logo will also be shown in the top right corner. "
                                           "When a navigation destination is set and the driving model is using it as input, the driving path on the map will turn green."));
+
+  // PFEIFER - AOL {{
+  // Disable all AOL toggles while on-road
+  // AlwaysOnLateralMainEnables and DisengageLatOnBrake will cause errors if toggled on-road
+  // DisengageLatOnBlinker and DisengageLatOnBrake are disabled so we do not need to read them from the fs on each controls loop
+  auto aol_toggle = toggles["AlwaysOnLateralEnabled"];
+  auto aol_main_toggle = toggles["AlwaysOnLateralMainEnables"];
+  auto dlobrake_toggle = toggles["DisengageLatOnBrake"];
+  auto dloblinker_toggle = toggles["DisengageLatOnBlinker"];
+  auto dlolsblinker_toggle = toggles["DisengageLatOnLowSpeedBlinker"];
+  bool aol_locked = params.getBool("AlwaysOnLateralEnabledLock");
+  aol_toggle->setEnabled(!aol_locked);
+  aol_main_toggle->setEnabled(!aol_locked);
+  dlobrake_toggle->setEnabled(!aol_locked);
+  dloblinker_toggle->setEnabled(!aol_locked);
+  dlolsblinker_toggle->setEnabled(!aol_locked);
+  // }} PFEIFER - AOL
 
   const bool is_release = params.getBool("IsReleaseBranch");
   auto cp_bytes = params.get("CarParamsPersistent");

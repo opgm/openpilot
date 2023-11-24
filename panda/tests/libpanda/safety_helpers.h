@@ -21,6 +21,9 @@ bool safety_config_valid() {
 
 void set_controls_allowed(bool c){
   controls_allowed = c;
+  // PFEIFER - AOL {{
+  lateral_controls_allowed = c;
+  // }} PFEIFER - AOL
 }
 
 void set_alternative_experience(int mode){
