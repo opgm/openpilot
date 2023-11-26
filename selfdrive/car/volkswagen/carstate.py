@@ -6,6 +6,10 @@ from opendbc.can.parser import CANParser
 from openpilot.selfdrive.car.volkswagen.values import DBC, CANBUS, PQ_CARS, NetworkLocation, TransmissionType, GearShifter, \
                                             CarControllerParams
 
+# PFEIFER - AOL {{
+from openpilot.selfdrive.controls.always_on_lateral import AlwaysOnLateral, AlwaysOnLateralType
+# }} PFEIFER - AOL
+
 
 class CarState(CarStateBase):
   def __init__(self, CP):
@@ -14,6 +18,10 @@ class CarState(CarStateBase):
     self.button_states = {button.event_type: False for button in self.CCP.BUTTONS}
     self.esp_hold_confirmation = False
     self.upscale_lead_car_signal = False
+
+    # PFEIFER - AOL {{
+    AlwaysOnLateral.set_always_on_lateral_type(AlwaysOnLateralType.CRUISE_STATE)
+    # }} PFEIFER - AOL
 
   def create_button_events(self, pt_cp, buttons):
     button_events = []

@@ -7,6 +7,10 @@ from openpilot.selfdrive.car.interfaces import CarStateBase
 from opendbc.can.parser import CANParser
 from opendbc.can.can_define import CANDefine
 
+# PFEIFER - AOL {{
+from openpilot.selfdrive.controls.always_on_lateral import AlwaysOnLateral, AlwaysOnLateralType
+# }} PFEIFER - AOL
+
 class CarState(CarStateBase):
   def __init__(self, CP):
     super().__init__(CP)
@@ -19,6 +23,10 @@ class CarState(CarStateBase):
     self.steer_warning = None
     self.acc_state = 0
     self.das_control_counters = deque(maxlen=32)
+
+    # PFEIFER - AOL {{
+    AlwaysOnLateral.set_always_on_lateral_type(AlwaysOnLateralType.CRUISE_STATE)
+    # }} PFEIFER - AOL
 
   def update(self, cp, cp_cam):
     ret = car.CarState.new_message()

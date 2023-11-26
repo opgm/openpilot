@@ -208,6 +208,21 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"Version", PERSISTENT},
     {"VisionRadarToggle", PERSISTENT},
     {"WheeledBody", PERSISTENT},
+
+    // PFEIFER - AOL {{
+    {"AlwaysOnLateralEnabled", PERSISTENT},
+    {"AlwaysOnLateralEnabledLock", PERSISTENT | CLEAR_ON_OFFROAD_TRANSITION},
+    {"AlwaysOnLateralEnabledConfirmed", PERSISTENT},
+    {"AlwaysOnLateralMainEnablesConfirmed", PERSISTENT},
+    {"AlwaysOnLateralMainEnables", PERSISTENT},
+    {"AlwaysOnLateralType", PERSISTENT},
+    {"LateralAllowed", PERSISTENT},
+    {"LateralActive", CLEAR_ON_MANAGER_START | CLEAR_ON_ONROAD_TRANSITION},
+    {"DisengageLatOnBrake", PERSISTENT},
+    {"DisengageLatOnBlinker", PERSISTENT},
+    {"DisengageLatOnLowSpeedBlinker", PERSISTENT},
+    {"LatBlinkerLowSpeedLimit", PERSISTENT},
+    // }} PFEIFER - AOL
 };
 
 } // namespace

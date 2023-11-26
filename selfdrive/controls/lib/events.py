@@ -239,7 +239,7 @@ def below_steer_speed_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.S
     f"Steer Unavailable Below {get_display_speed(CP.minSteerSpeed, metric)}",
     "",
     AlertStatus.userPrompt, AlertSize.small,
-    Priority.LOW, VisualAlert.steerRequired, AudibleAlert.prompt, 0.4)
+    Priority.LOW, VisualAlert.steerRequired, AudibleAlert.none, 0.4)
 
 
 def calibration_incomplete_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMaster, metric: bool, soft_disable_time: int) -> Alert:
@@ -257,6 +257,31 @@ def no_gps_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMaster, m
     "Hardware malfunctioning if sky is visible",
     AlertStatus.normal, AlertSize.mid,
     Priority.LOWER, VisualAlert.none, AudibleAlert.none, .2, creation_delay=300.)
+
+def torque_nn_load_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMaster, metric: bool, soft_disable_time: int) -> Alert:
+  model_name = CP.lateralTuning.torque.nnModelName
+  fuzzy = CP.lateralTuning.torque.nnModelFuzzyMatch
+  if model_name == "":
+    return Alert(
+      "NN torque controller not loaded",
+      "go donate logs to twilsonco to get loaded!",
+      AlertStatus.userPrompt, AlertSize.mid,
+      Priority.LOW, VisualAlert.none, AudibleAlert.prompt, 6.0)
+  else:
+    if 'b\'' in model_name:
+      car, eps = model_name.split('b\'')
+      eps = 'b\'' + eps
+      return Alert(
+        f"NN torque ({fuzzy = }): {car}",
+        f"eps: {eps}",
+        AlertStatus.userPrompt, AlertSize.none,
+        Priority.LOWEST, VisualAlert.none, AudibleAlert.none, 6.0)
+    else:
+      return Alert(
+        f"NN torque controller loaded ({fuzzy = })",
+        model_name,
+        AlertStatus.userPrompt, AlertSize.none,
+        Priority.LOWEST, VisualAlert.none, AudibleAlert.none, 6.0)
 
 # *** debug alerts ***
 
@@ -964,6 +989,41 @@ EVENTS: Dict[int, Dict[str, Union[Alert, AlertCallbackType]]] = {
     ET.NO_ENTRY: NoEntryAlert("Vehicle Sensors Calibrating"),
   },
 
+  EventName.torqueNNLoad: {
+    ET.PERMANENT: torque_nn_load_alert,
+  },
+
+  EventName.pedalInterceptorNoBrake: {
+    ET.WARNING: Alert(
+      "Braking Unavailable",
+      "Shift to L",
+      AlertStatus.userPrompt, AlertSize.mid,
+      Priority.HIGH, VisualAlert.wrongGear, AudibleAlert.promptRepeat, 4.),
+  },
+
+  EventName.personalityRelaxed: {
+    ET.PERMANENT: Alert(
+      "Relaxed",
+      "",
+      AlertStatus.normal, AlertSize.small,
+      Priority.LOW, VisualAlert.none, AudibleAlert.none, 2.0),
+  },
+
+  EventName.personalityStandard: {
+    ET.PERMANENT: Alert(
+      "Standard",
+      "",
+      AlertStatus.normal, AlertSize.small,
+      Priority.LOW, VisualAlert.none, AudibleAlert.none, 2.0),
+  },
+
+  EventName.personalityAggressive: {
+    ET.PERMANENT: Alert(
+      "Aggresive",
+      "",
+      AlertStatus.normal, AlertSize.small,
+      Priority.LOW, VisualAlert.none, AudibleAlert.none, 2.0),
+  },
 }
 
 

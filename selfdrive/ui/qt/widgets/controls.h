@@ -246,6 +246,19 @@ public:
     });
   }
 
+  void refresh() {
+    int value = atoi(params.get(key).c_str());
+    int i = 0;
+    for (auto btn : button_group->buttons()) {
+      btn->setChecked(i == value);
+      i++;
+    }
+  }
+
+  void showEvent(QShowEvent *event) override {
+    refresh();
+  }
+
   void setEnabled(bool enable) {
     for (auto btn : button_group->buttons()) {
       btn->setEnabled(enable);
