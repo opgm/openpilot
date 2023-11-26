@@ -55,7 +55,8 @@ RxCheck gm_rx_checks[] = {
   {.msg = {{0x34A, 0, 5, .expected_timestep = 100000U}, { 0 }, { 0 }}},
   {.msg = {{0x1E1, 0, 7, .expected_timestep = 100000U},   // Non-SDGM Car
            {0x1E1, 2, 7, .expected_timestep = 100000U}}}, // SDGM Car
-  {.msg = {{0xF1, 0, 6, .expected_timestep = 100000U}, { 0 }, { 0 }}},
+  {.msg = {{0xF1, 0, 6, .expected_timestep = 100000U},   // Non-SDGM Car
+           {0xF1, 2, 6, .expected_timestep = 100000U}}}, // SDGM Car
   {.msg = {{0x1C4, 0, 8, .expected_timestep = 100000U}, { 0 }, { 0 }}},
 };
 
