@@ -6,6 +6,10 @@ from openpilot.selfdrive.car.interfaces import CarStateBase
 from openpilot.selfdrive.car.ford.fordcan import CanBus
 from openpilot.selfdrive.car.ford.values import CANFD_CAR, CarControllerParams, DBC
 
+# PFEIFER - AOL {{
+from openpilot.selfdrive.controls.always_on_lateral import AlwaysOnLateral, AlwaysOnLateralType
+# }} PFEIFER - AOL
+
 GearShifter = car.CarState.GearShifter
 TransmissionType = car.CarParams.TransmissionType
 
@@ -19,6 +23,10 @@ class CarState(CarStateBase):
 
     self.vehicle_sensors_valid = False
     self.hybrid_platform = False
+
+    # PFEIFER - AOL {{
+    AlwaysOnLateral.set_always_on_lateral_type(AlwaysOnLateralType.CRUISE_STATE)
+    # }} PFEIFER - AOL
 
   def update(self, cp, cp_cam):
     ret = car.CarState.new_message()

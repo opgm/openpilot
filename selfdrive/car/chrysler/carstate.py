@@ -5,6 +5,10 @@ from opendbc.can.can_define import CANDefine
 from openpilot.selfdrive.car.interfaces import CarStateBase
 from openpilot.selfdrive.car.chrysler.values import DBC, STEER_THRESHOLD, RAM_CARS
 
+# PFEIFER - AOL {{
+from openpilot.selfdrive.controls.always_on_lateral import AlwaysOnLateral, AlwaysOnLateralType
+# }} PFEIFER - AOL
+
 
 class CarState(CarStateBase):
   def __init__(self, CP):
@@ -20,6 +24,10 @@ class CarState(CarStateBase):
       self.shifter_values = can_define.dv["Transmission_Status"]["Gear_State"]
     else:
       self.shifter_values = can_define.dv["GEAR"]["PRNDL"]
+
+    # PFEIFER - AOL {{
+    AlwaysOnLateral.set_always_on_lateral_type(AlwaysOnLateralType.CRUISE_STATE)
+    # }} PFEIFER - AOL
 
   def update(self, cp, cp_cam):
 
