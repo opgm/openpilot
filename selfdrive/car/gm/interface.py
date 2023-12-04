@@ -260,7 +260,7 @@ class CarInterface(CarInterfaceBase):
       ret.centerToFront = ret.wheelbase * 0.4
       CarInterfaceBase.configure_torque_tune(candidate, ret.lateralTuning)
 
-    elif candidate == CAR.TRAILBLAZER:
+    elif candidate in (CAR.TRAILBLAZER, CAR.TRAILBLAZER_CC):
       ret.mass = 1345.
       ret.wheelbase = 2.64
       ret.steerRatio = 16.8
