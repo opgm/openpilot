@@ -150,6 +150,12 @@ class CAR(Platforms):
     [GMCarDocs("Chevrolet Trailblazer 2021-22")],
     GMCarSpecs(mass=1345, wheelbase=2.64, steerRatio=16.8, centerToFrontRatio=0.4, tireStiffnessFactor=1.0),
   )
+  # Separate car def is required when there is no ASCM
+  # (for now) unless there is a way to detect it when it has been unplugged...
+  CHEVROLET_BOLT_CC = GMPlatformConfig(
+    CHEVROLET_BOLT_EUV.car_docs,
+    CHEVROLET_BOLT_EUV.specs,
+  )
 
 
 class CruiseButtons:
@@ -224,10 +230,12 @@ FW_QUERY_CONFIG = FwQueryConfig(
   extra_ecus=[(Ecu.fwdCamera, 0x24b, None)],
 )
 
-EV_CAR = {CAR.CHEVROLET_VOLT, CAR.CHEVROLET_BOLT_EUV}
+EV_CAR = {CAR.CHEVROLET_VOLT, CAR.CHEVROLET_BOLT_EUV, CAR.CHEVROLET_BOLT_CC}
+CC_ONLY_CAR = {CAR.CHEVROLET_BOLT_CC}
 
 # We're integrated at the camera with VOACC on these cars (instead of ASCM w/ OBD-II harness)
 CAMERA_ACC_CAR = {CAR.CHEVROLET_BOLT_EUV, CAR.CHEVROLET_SILVERADO, CAR.CHEVROLET_EQUINOX, CAR.CHEVROLET_TRAILBLAZER}
+CAMERA_ACC_CAR.update({CAR.CHEVROLET_BOLT_CC})
 
 STEER_THRESHOLD = 1.0
 

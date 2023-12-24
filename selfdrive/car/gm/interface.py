@@ -26,6 +26,7 @@ NON_LINEAR_TORQUE_PARAMS = {
   CAR.GMC_ACADIA: [4.78003305, 1.0, 0.3122, 0.05591772],
   CAR.CHEVROLET_SILVERADO: [3.29974374, 1.0, 0.25571356, 0.0465122]
 }
+NON_LINEAR_TORQUE_PARAMS[CAR.CHEVROLET_BOLT_CC] = NON_LINEAR_TORQUE_PARAMS[CAR.CHEVROLET_BOLT_EUV]
 
 NEURAL_PARAMS_PATH = os.path.join(BASEDIR, 'selfdrive/car/torque_data/neural_ff_weights.json')
 
@@ -79,8 +80,8 @@ class CarInterface(CarInterfaceBase):
     return float(self.neural_ff_model.predict(inputs)) + friction
 
   def torque_from_lateral_accel(self) -> TorqueFromLateralAccelCallbackType:
-    if self.CP.carFingerprint == CAR.CHEVROLET_BOLT_EUV:
-      self.neural_ff_model = NanoFFModel(NEURAL_PARAMS_PATH, self.CP.carFingerprint)
+    if self.CP.carFingerprint in (CAR.CHEVROLET_BOLT_EUV, CAR.CHEVROLET_BOLT_CC):
+      self.neural_ff_model = NanoFFModel(NEURAL_PARAMS_PATH, CAR.CHEVROLET_BOLT_EUV)
       return self.torque_from_lateral_accel_neural
     elif self.CP.carFingerprint in NON_LINEAR_TORQUE_PARAMS:
       return self.torque_from_lateral_accel_siglin
@@ -180,7 +181,7 @@ class CarInterface(CarInterfaceBase):
         ret.steerActuatorDelay = 0.2
         CarInterfaceBase.configure_torque_tune(candidate, ret.lateralTuning)
 
-    elif candidate == CAR.CHEVROLET_BOLT_EUV:
+    elif candidate in (CAR.CHEVROLET_BOLT_EUV, CAR.CHEVROLET_BOLT_CC):
       ret.steerActuatorDelay = 0.2
       CarInterfaceBase.configure_torque_tune(candidate, ret.lateralTuning)
 
