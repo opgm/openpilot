@@ -37,7 +37,7 @@ class CarControllerParams:
     self.ZERO_GAS = 2048  # Coasting
     self.MAX_BRAKE = 400  # ~ -4.0 m/s^2 with regen
 
-    if CP.carFingerprint in CAMERA_ACC_CAR:
+    if CP.carFingerprint in CAMERA_ACC_CAR and CP.carFingerprint not in CC_ONLY_CAR:
       self.MAX_GAS = 3400
       self.MAX_ACC_REGEN = 1514
       self.INACTIVE_REGEN = 1554
@@ -166,6 +166,48 @@ class CAR(Platforms):
     [GMCarDocs("Chevrolet Trailblazer 2021-22")],
     GMCarSpecs(mass=1345, wheelbase=2.64, steerRatio=16.8, centerToFrontRatio=0.4, tireStiffnessFactor=1.0),
   )
+  # Separate car def is required when there is no ASCM
+  # (for now) unless there is a way to detect it when it has been unplugged...
+  VOLT_CC = GMPlatformConfig(
+    "CHEVROLET VOLT NO ACC",
+    VOLT.car_info,
+    VOLT.specs,
+  )
+  BOLT_CC = GMPlatformConfig(
+    "CHEVROLET BOLT EV NO ACC",
+    BOLT_EUV.car_info,
+    BOLT_EUV.specs,
+  )
+  EQUINOX_CC = GMPlatformConfig(
+    "CHEVROLET EQUINOX NO ACC",
+    EQUINOX.car_info,
+    EQUINOX.specs,
+  )
+  SUBURBAN = GMPlatformConfig(
+    "CHEVROLET SUBURBAN PREMIER 2016",
+    [GMCarDocs("Chevrolet Suburban Premier 2016-2020")],
+    CarSpecs(mass=2731, wheelbase=3.302, steerRatio=17.3, centerToFrontRatio=0.49),
+  )
+  SUBURBAN_CC = GMPlatformConfig(
+    "CHEVROLET SUBURBAN NO ACC",
+    SUBURBAN.car_info,
+    SUBURBAN.specs,
+  )
+  YUKON_CC = GMPlatformConfig(
+    "GMC YUKON NO ACC",
+    [GMCarDocs("GMC Yukon No ACC")],
+    CarSpecs(mass=2541, wheelbase=2.95, steerRatio=16.3, centerToFrontRatio=0.4),
+  )
+  CT6_CC = GMPlatformConfig(
+    "CADILLAC CT6 NO ACC",
+    [GMCarDocs("Cadillac CT6 No ACC")],
+    CarSpecs(mass=2358, wheelbase=3.11, steerRatio=17.7, centerToFrontRatio=0.4),
+  )
+  TRAILBLAZER_CC = GMPlatformConfig(
+    "CHEVROLET TRAILBLAZER NO ACC",
+    TRAILBLAZER.car_info,
+    TRAILBLAZER.specs,
+  )
 
 
 class CruiseButtons:
@@ -192,6 +234,7 @@ class CanBus:
 
 class GMFlags(IntFlag):
   NO_CAMERA = 4
+  NO_ACCELERATOR_POS_MSG = 8
 
 
 # In a Data Module, an identifier is a string used to recognize an object,
@@ -243,10 +286,12 @@ FW_QUERY_CONFIG = FwQueryConfig(
   extra_ecus=[(Ecu.fwdCamera, 0x24b, None)],
 )
 
-EV_CAR = {CAR.VOLT, CAR.BOLT_EUV}
+EV_CAR = {CAR.VOLT, CAR.BOLT_EUV, CAR.VOLT_CC, CAR.BOLT_CC}
+CC_ONLY_CAR = {CAR.VOLT_CC, CAR.BOLT_CC, CAR.EQUINOX_CC, CAR.SUBURBAN_CC, CAR.YUKON_CC, CAR.CT6_CC, CAR.TRAILBLAZER_CC}
 
 # We're integrated at the camera with VOACC on these cars (instead of ASCM w/ OBD-II harness)
 CAMERA_ACC_CAR = {CAR.BOLT_EUV, CAR.SILVERADO, CAR.EQUINOX, CAR.TRAILBLAZER}
+CAMERA_ACC_CAR.update({CAR.VOLT_CC, CAR.BOLT_CC, CAR.EQUINOX_CC, CAR.YUKON_CC, CAR.CT6_CC, CAR.TRAILBLAZER_CC})
 
 STEER_THRESHOLD = 1.0
 
