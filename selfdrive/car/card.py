@@ -15,6 +15,7 @@ from openpilot.selfdrive.boardd.boardd import can_list_to_can_capnp
 from openpilot.selfdrive.car.car_helpers import get_car, get_one_can
 from openpilot.selfdrive.car.interfaces import CarInterfaceBase
 
+from selfdrive.controls.always_on_lateral import AlwaysOnLateral
 
 REPLAY = "REPLAY" in os.environ
 
@@ -53,6 +54,9 @@ class CarD:
     self.CP.alternativeExperience = 0
     if not disengage_on_accelerator:
       self.CP.alternativeExperience |= ALTERNATIVE_EXPERIENCE.DISABLE_DISENGAGE_ON_GAS
+    # PFEIFER - AOL {{
+    self.CP.alternativeExperience |= AlwaysOnLateral.alternative_experience()
+    # }} PFEIFER - AOL
 
     car_recognized = self.CP.carName != 'mock'
     openpilot_enabled_toggle = self.params.get_bool("OpenpilotEnabledToggle")
