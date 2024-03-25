@@ -176,15 +176,15 @@ class CAR(Platforms):
   # Separate car def is required when there is no ASCM
   # (for now) unless there is a way to detect it when it has been unplugged...
   CHEVROLET_VOLT_CC = GMPlatformConfig(
-    CHEVROLET_VOLT.car_info,
+    CHEVROLET_VOLT.car_docs,
     CHEVROLET_VOLT.specs,
   )
   CHEVROLET_BOLT_CC = GMPlatformConfig(
-    CHEVROLET_BOLT_EUV.car_info,
+    CHEVROLET_BOLT_EUV.car_docs,
     CHEVROLET_BOLT_EUV.specs,
   )
   CHEVROLET_EQUINOX_CC = GMPlatformConfig(
-    CHEVROLET_EQUINOX.car_info,
+    CHEVROLET_EQUINOX.car_docs,
     CHEVROLET_EQUINOX.specs,
   )
   CHEVROLET_SUBURBAN = GMPlatformConfig(
@@ -192,7 +192,7 @@ class CAR(Platforms):
     CarSpecs(mass=2731, wheelbase=3.302, steerRatio=17.3, centerToFrontRatio=0.49),
   )
   CHEVROLET_SUBURBAN_CC = GMPlatformConfig(
-    CHEVROLET_SUBURBAN.car_info,
+    CHEVROLET_SUBURBAN.car_docs,
     CHEVROLET_SUBURBAN.specs,
   )
   GMC_YUKON_CC = GMPlatformConfig(
@@ -204,7 +204,7 @@ class CAR(Platforms):
     CarSpecs(mass=2358, wheelbase=3.11, steerRatio=17.7, centerToFrontRatio=0.4),
   )
   CHEVROLET_TRAILBLAZER_CC = GMPlatformConfig(
-    CHEVROLET_TRAILBLAZER.car_info,
+    CHEVROLET_TRAILBLAZER.car_docs,
     CHEVROLET_TRAILBLAZER.specs,
   )
   CADILLAC_XT4 = GMPlatformConfig(
