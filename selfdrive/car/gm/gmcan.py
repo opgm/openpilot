@@ -178,44 +178,38 @@ def create_lka_icon_command(bus, active, critical, steer):
   return make_can_msg(0x104c006c, dat, bus)
 
 
-def create_gm_cc_spam_command(packer, controller, CS, actuators):
-  if controller.params_.get_bool("IsMetric"):
-    _CV = CV.MS_TO_KPH
-    RATE_UP_MAX = 0.04
-    RATE_DOWN_MAX = 0.04
-  else:
-    _CV = CV.MS_TO_MPH
-    RATE_UP_MAX = 0.2
-    RATE_DOWN_MAX = 0.2
-
-  accel = actuators.accel * _CV  # m/s/s to mph/s
-  speedSetPoint = int(round(CS.out.cruiseState.speed * _CV))
+def create_gm_cc_spam_command(packer, controller, CS, actuators, frogpilot_variables):
+  accel = actuators.accel
+  Vego = CS.out.vEgo
 
   cruiseBtn = CruiseButtons.INIT
-  if speedSetPoint == CS.CP.minEnableSpeed and accel < -1:
+  if abs(accel) <= 0.15:
+    rate = 1
+  else:
+    rate = 0.2
+
+  MS_CONVERT = CV.MS_TO_KPH if controller.params_.get_bool("IsMetric") else CV.MS_TO_MPH
+
+  speedSetPoint = int(round(CS.out.cruiseState.speed * MS_CONVERT))
+
+  if accel > 0:
+    DesiredSetPoint = int(round((Vego * 1.01 + 3 * accel) * MS_CONVERT)) # 1.01 factor to match cluster speed better
+  else: # accel <= 0
+    DesiredSetPoint = int(round((Vego * 1.01 + 3 * accel) * MS_CONVERT))
+  
+  if CS.CP.minEnableSpeed - (DesiredSetPoint /  MS_CONVERT) > 3.25:
     cruiseBtn = CruiseButtons.CANCEL
     controller.apply_speed = 0
-    rate = 0.04
-  elif accel < 0:
+  elif DesiredSetPoint < speedSetPoint and speedSetPoint > CS.CP.minEnableSpeed * MS_CONVERT + 1:
     cruiseBtn = CruiseButtons.DECEL_SET
-    if speedSetPoint > (CS.out.vEgo * _CV) + 3.0:  # If accel is changing directions, bring set speed to current speed as fast as possible
-      rate = RATE_DOWN_MAX
-    else:
-      rate = max(-1 / accel, RATE_DOWN_MAX)
     controller.apply_speed = speedSetPoint - 1
-  elif accel > 0:
+  elif DesiredSetPoint > speedSetPoint:
     cruiseBtn = CruiseButtons.RES_ACCEL
-    if speedSetPoint < (CS.out.vEgo * _CV) - 3.0:
-      rate = RATE_UP_MAX
-    else:
-      rate = max(1 / accel, RATE_UP_MAX)
     controller.apply_speed = speedSetPoint + 1
   else:
+    cruiseBtn = CruiseButtons.INIT
     controller.apply_speed = speedSetPoint
-    rate = float('inf')
 
-  # Check rlogs closely - our message shouldn't show up on the pt bus for us
-  # Or bus 2, since we're forwarding... but I think it does
   if (cruiseBtn != CruiseButtons.INIT) and ((controller.frame - controller.last_button_frame) * DT_CTRL > rate):
     controller.last_button_frame = controller.frame
     idx = (CS.buttons_counter + 1) % 4  # Need to predict the next idx for '22-23 EUV

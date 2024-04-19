@@ -98,6 +98,9 @@ class CarController(CarControllerBase):
         apply_steer = apply_driver_steer_torque_limits(new_steer, self.apply_steer_last, CS.out.steeringTorque, self.params)
       else:
         apply_steer = 0
+      
+      if (self.CP.flags & GMFlags.CC_LONG.value) and CC.enabled and not CS.out.cruiseState.enabled: # Send 0 so Panda doesn't error
+        apply_steer = 0
 
       self.last_steer_frame = self.frame
       self.apply_steer_last = apply_steer
