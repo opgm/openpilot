@@ -212,7 +212,7 @@ class CAR(Platforms):
     CarSpecs(mass=1660, wheelbase=2.78, steerRatio=14.4, centerToFrontRatio=0.4),
   )
   CHEVROLET_MALIBU_CC = GMPlatformConfig(
-    [GMCarDocs("Cadillac Malibu No ACC")],
+    [GMCarDocs("Chevrolet Malibu No ACC")],
     CarSpecs(mass=1450, wheelbase=2.8, steerRatio=15.8, centerToFrontRatio=0.4),
   )
 
