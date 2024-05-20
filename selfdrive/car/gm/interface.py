@@ -235,6 +235,11 @@ class CarInterface(CarInterfaceBase):
       ret.minSteerSpeed = 10 * CV.KPH_TO_MS
       CarInterfaceBase.configure_torque_tune(candidate, ret.lateralTuning)
 
+    elif candidate == CAR.BUICK_BABYENCLAVE:
+      ret.steerActuatorDelay = 0.2
+      ret.minSteerSpeed = 10 * CV.KPH_TO_MS
+      CarInterfaceBase.configure_torque_tune(candidate, ret.lateralTuning)
+
     elif candidate == CAR.CADILLAC_CT6_CC:
       CarInterfaceBase.configure_torque_tune(candidate, ret.lateralTuning)
 
