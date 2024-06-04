@@ -192,7 +192,7 @@ class CarInterface(CarInterfaceBase):
       ret.safetyConfigs[0].safetyParam |= Panda.FLAG_GM_NO_ACC
 
       if PEDAL_MSG in fingerprint[CanBus.POWERTRAIN]:
-        ret.enableGasInterceptor = True
+        ret.enableGasInterceptorDEPRECATED = True
         ret.safetyConfigs[0].safetyParam |= Panda.FLAG_GM_GAS_INTERCEPTOR
         ret.minEnableSpeed = -1
         ret.pcmCruise = False
