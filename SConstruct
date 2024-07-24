@@ -102,7 +102,6 @@ if arch == "larch64":
 
   libpath = [
     "/usr/local/lib",
-    "/usr/lib",
     "/system/vendor/lib64",
     f"#third_party/acados/{arch}/lib",
   ]
@@ -211,8 +210,6 @@ env = Environment(
     "#cereal",
     "#msgq",
     "#opendbc/can",
-    "#third_party/maplibre-native-qt/include",
-    f"#third_party/maplibre-native-qt/{arch}/include"
   ],
 
   CC='clang',
@@ -277,7 +274,7 @@ Export('envCython')
 
 # Qt build environment
 qt_env = env.Clone()
-qt_modules = ["Widgets", "Gui", "Core", "Network", "Concurrent", "Multimedia", "Quick", "Qml", "QuickWidgets", "Location", "Positioning", "DBus", "Xml"]
+qt_modules = ["Widgets", "Gui", "Core", "Network", "Concurrent", "Multimedia", "Quick", "Qml", "QuickWidgets", "DBus", "Xml"]
 
 qt_libs = []
 if arch == "Darwin":
@@ -330,8 +327,7 @@ qt_flags = [
   "-DQT_MESSAGELOGCONTEXT",
 ]
 qt_env['CXXFLAGS'] += qt_flags
-qt_env['LIBPATH'] += ['#selfdrive/ui', f"#third_party/maplibre-native-qt/{arch}/lib"]
-qt_env['RPATH'] += [Dir(f"#third_party/maplibre-native-qt/{arch}/lib").srcnode().abspath]
+qt_env['LIBPATH'] += ['#selfdrive/ui', ]
 qt_env['LIBS'] = qt_libs
 
 if GetOption("clazy"):
