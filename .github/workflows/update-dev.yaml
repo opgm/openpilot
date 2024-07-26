@@ -11,7 +11,9 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.CI_GITHUB_TOKEN }}
 
     - name: Set up Git
       run: |
@@ -34,7 +36,7 @@ jobs:
 
     - name: Unsubmodule master
       run: |
-        declare -a submodules=("panda" "msgq" "opendbc" "body" "rednose_repo" "tinygrad_repo" "teleoprtc_repo")
+        declare -a submodules=("panda" "msgq_repo" "opendbc" "body" "rednose_repo" "tinygrad_repo" "teleoprtc_repo")
         function unsubmodule() {
           for submodule in $submodules; do
             mv $submodule .tmp
@@ -66,6 +68,7 @@ jobs:
         git checkout unsubmoduled panda/tests/
         git commit -am "Re-add panda tests" --author="OPGM CI Automated" --no-verify
         git checkout upstream/master tools
+        git checkout upstream/master .github
         git checkout upstream/master Dockerfile.openpilot
         git commit -am "Re-add tools" --author="OPGM CI Automated" --no-verify
 
