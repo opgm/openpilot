@@ -87,6 +87,14 @@ jobs:
           git cherry-pick $commit || exit 1
         done
 
+    - name: Build docker image
+      run: |
+        docker build -t openpilot -f Dockerfile.openpilot .
+
+    - name: Run tests
+      run: |
+        docker run --rm openpilot pytest
+
     - name: Push dev-new to dev
       run: |
         git checkout -f dev-new
