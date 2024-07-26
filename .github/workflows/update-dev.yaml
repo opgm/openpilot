@@ -106,6 +106,10 @@ jobs:
       run: |
         docker run --rm openpilot panda/tests/safety/test.sh
 
+    - name: Test selfdrive
+      run: |
+        docker run --rm openpilot pytest selfdrive/car/tests/
+
     - name: Push dev-new to dev
       run: |
         git checkout -f dev-new
