@@ -72,7 +72,7 @@ jobs:
 
     - name: Cherry-pick dev commits onto dev-new
       run: |
-        diverged_commits=$(git log --pretty=format:"%H" --reverse upstream/master-ci..origin/dev | tail -n +3)
+        diverged_commits=$(git log --pretty=format:"%H" --reverse upstream/master-ci..origin/dev | tail -n +4)
         if [ -z "$diverged_commits" ]; then
           echo "Error: no commits to cherry-pick"
           exit 1
