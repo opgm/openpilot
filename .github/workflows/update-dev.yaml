@@ -27,6 +27,14 @@ jobs:
         git fetch upstream master
         git fetch upstream master-ci
 
+    - name: Cache Docker layers
+      uses: actions/cache@v3
+      with:
+        path: /tmp/.docker-cache
+        key: ${{ runner.os }}-docker-${{ hashFiles('**/Dockerfile') }}
+        restore-keys: |
+          ${{ runner.os }}-docker-
+
     - name: Push dev to backup branch
       run: |
         backup_branch_name="dev-bkp-$(date -u +%Y-%m-%d)"
@@ -92,7 +100,7 @@ jobs:
 
     - name: Build docker image
       run: |
-        docker build -t openpilot -f Dockerfile.openpilot .
+        docker build -t openpilot -f Dockerfile.openpilot --cache-from type=local,src=/tmp/.docker-cache .
 
     - name: Test panda
       run: |
@@ -104,3 +112,10 @@ jobs:
         git branch -D dev || :
         git switch -c dev
         git push -f origin dev --no-verify
+
+    - name: Save Docker cache
+      if: success()
+      uses: actions/cache@v3
+      with:
+        path: /tmp/.docker-cache
+        key: ${{ runner.os }}-docker-${{ hashFiles('**/Dockerfile') }}
