@@ -46,9 +46,6 @@ jobs:
             git add $submodule
           done
           git rm -f .gitmodules
-          rm -rf ._github
-          mv .github ._github
-          git add ._github
         }
         git checkout -f upstream/master
         git reset --hard upstream/master
@@ -70,8 +67,7 @@ jobs:
         git commit -am "Re-add panda tests" --author="OPGM CI Automated" --no-verify
         git checkout upstream/master tools
         git checkout upstream/master Dockerfile.openpilot
-        git checkout upstream/master ._github
-        mv ._github .github
+        git checkout upstream/master .github
         git commit -am "Re-add tools" --author="OPGM CI Automated" --no-verify
 
     - name: Cherry-pick dev commits onto dev-new
