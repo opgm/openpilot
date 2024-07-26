@@ -293,7 +293,7 @@ class CarInterface(CarInterfaceBase):
       ret.flags |= GMFlags.NO_CAMERA.value
       ret.safetyConfigs[0].safetyParam |= Panda.FLAG_GM_NO_CAMERA
 
-    if ACCELERATOR_POS_MSG not in fingerprint[CanBus.POWERTRAIN]:
+    if ACCELERATOR_POS_MSG not in fingerprint[CanBus.POWERTRAIN] and len(fingerprint[CanBus.POWERTRAIN]) > 0:
       ret.flags |= GMFlags.NO_ACCELERATOR_POS_MSG.value
 
     return ret
