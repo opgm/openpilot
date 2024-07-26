@@ -175,23 +175,27 @@ class CAR(Platforms):
   # Separate car def is required when there is no ASCM
   # (for now) unless there is a way to detect it when it has been unplugged...
   CHEVROLET_VOLT_CC = GMPlatformConfig(
-    CHEVROLET_VOLT.car_docs,
+    [GMCarDocs("Chevrolet Volt LT 2017-18")],
     CHEVROLET_VOLT.specs,
   )
   CHEVROLET_BOLT_CC = GMPlatformConfig(
-    CHEVROLET_BOLT_EUV.car_docs,
+    [
+      GMCarDocs("Chevrolet Bolt EUV LT 2022-23"),
+      GMCarDocs("Chevrolet Bolt EV LT 2022-23"),
+      GMCarDocs("Chevrolet Bolt EV 2017-21"),
+    ],
     CHEVROLET_BOLT_EUV.specs,
   )
   CHEVROLET_EQUINOX_CC = GMPlatformConfig(
-    CHEVROLET_EQUINOX.car_docs,
+    [GMCarDocs("Chevrolet Equinox NO ACC 2019-22")],
     CHEVROLET_EQUINOX.specs,
   )
   CHEVROLET_SUBURBAN = GMPlatformConfig(
-    [GMCarDocs("Chevrolet Suburban Premier 2016-2020")],
+    [GMCarDocs("Chevrolet Suburban Premier 2016-20")],
     CarSpecs(mass=2731, wheelbase=3.302, steerRatio=17.3, centerToFrontRatio=0.49),
   )
   CHEVROLET_SUBURBAN_CC = GMPlatformConfig(
-    CHEVROLET_SUBURBAN.car_docs,
+    [GMCarDocs("Chevrolet Suburban 2016-20")],
     CHEVROLET_SUBURBAN.specs,
   )
   CADILLAC_CT6_CC = GMPlatformConfig(
@@ -199,7 +203,7 @@ class CAR(Platforms):
     CarSpecs(mass=2358, wheelbase=3.11, steerRatio=17.7, centerToFrontRatio=0.4),
   )
   CHEVROLET_TRAILBLAZER_CC = GMPlatformConfig(
-    CHEVROLET_TRAILBLAZER.car_docs,
+    [GMCarDocs("Chevrolet Trailblazer NO ACC 2021-22")],
     CHEVROLET_TRAILBLAZER.specs,
   )
   CADILLAC_XT4 = GMPlatformConfig(
