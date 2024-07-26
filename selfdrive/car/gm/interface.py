@@ -223,10 +223,6 @@ class CarInterface(CarInterfaceBase):
       ret.steerActuatorDelay = 0.075
       CarInterfaceBase.configure_torque_tune(candidate, ret.lateralTuning)
 
-    elif candidate == CAR.GMC_YUKON_CC:
-      ret.steerActuatorDelay = 0.2
-      CarInterfaceBase.configure_torque_tune(candidate, ret.lateralTuning)
-
     elif candidate == CAR.CADILLAC_XT4:
       ret.steerActuatorDelay = 0.2
       CarInterfaceBase.configure_torque_tune(candidate, ret.lateralTuning)
