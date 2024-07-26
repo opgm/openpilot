@@ -68,6 +68,9 @@ jobs:
         git checkout unsubmoduled panda/tests/
         git commit -am "Re-add panda tests" --author="OPGM CI Automated" --no-verify
         git checkout upstream/master tools
+        git checkout upstream/master Dockerfile.openpilot
+        git checkout upstream/master ._github
+        mv ._github .github
         git commit -am "Re-add tools" --author="OPGM CI Automated" --no-verify
 
     - name: Cherry-pick dev commits onto dev-new
