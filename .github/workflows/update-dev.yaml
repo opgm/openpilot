@@ -84,7 +84,7 @@ jobs:
             echo "Skipping $commit"
             continue
           fi
-          echo "Cherry-picking $commit"
+          echo "Cherry-picking $commit : $(git log -1 --pretty=format:"%s" $commit)"
           git cherry-pick $commit || exit 1
         done
 
