@@ -328,19 +328,6 @@ def getVersion() -> dict[str, str]:
   }
 
 
-@dispatcher.add_method
-def setNavDestination(latitude: int = 0, longitude: int = 0, place_name: str = None, place_details: str = None) -> dict[str, int]:
-  destination = {
-    "latitude": latitude,
-    "longitude": longitude,
-    "place_name": place_name,
-    "place_details": place_details,
-  }
-  Params().put("NavDestination", json.dumps(destination))
-
-  return {"success": 1}
-
-
 def scan_dir(path: str, prefix: str) -> list[str]:
   files = []
   # only walk directories that match the prefix
@@ -414,6 +401,7 @@ def uploadFilesToUrls(files_data: list[UploadFileDict]) -> UploadFilesToUrlRespo
 
   resp: UploadFilesToUrlResponse = {"enqueued": len(items), "items": items}
   if failed:
+    cloudlog.event("athena.uploadFilesToUrls.failed", failed=failed, error=True)
     resp["failed"] = failed
 
   return resp
