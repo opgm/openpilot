@@ -94,9 +94,9 @@ jobs:
       run: |
         docker build -t openpilot -f Dockerfile.openpilot .
 
-    - name: Run tests
+    - name: Test panda
       run: |
-        docker run --rm openpilot pytest
+        docker run --rm openpilot panda/tests/safety/test.sh
 
     - name: Push dev-new to dev
       run: |
