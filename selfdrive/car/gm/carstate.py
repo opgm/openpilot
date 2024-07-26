@@ -75,10 +75,7 @@ class CarState(CarStateBase):
     else:
       ret.gearShifter = self.parse_gear_shifter(self.shifter_values.get(pt_cp.vl["ECMPRDNL2"]["PRNDL2"], None))
 
-    if self.CP.flags & GMFlags.NO_ACCELERATOR_POS_MSG.value:
-      ret.brake = pt_cp.vl["EBCMBrakePedalPosition"]["BrakePedalPosition"] / 0xd0
-    else:
-      ret.brake = pt_cp.vl["ECMAcceleratorPos"]["BrakePedalPos"]
+    ret.brake = pt_cp.vl["ECMAcceleratorPos"]["BrakePedalPos"]
     if self.CP.networkLocation == NetworkLocation.fwdCamera:
       ret.brakePressed = pt_cp.vl["ECMEngineStatus"]["BrakePressed"] != 0
     else:
@@ -233,9 +230,6 @@ class CarState(CarStateBase):
       messages += [
         ("ASCMLKASteeringCmd", 0),
       ]
-      if CP.flags & GMFlags.NO_ACCELERATOR_POS_MSG.value:
-        messages.remove(("ECMAcceleratorPos", 80))
-        messages.append(("EBCMBrakePedalPosition", 100))
 
     if CP.transmissionType == TransmissionType.direct:
       messages += [
