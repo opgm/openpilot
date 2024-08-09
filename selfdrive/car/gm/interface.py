@@ -109,7 +109,7 @@ class CarInterface(CarInterfaceBase):
     ret.longitudinalTuning.kiBP = [5., 35.]
 
     if candidate in CAMERA_ACC_CAR:
-      ret.experimentalLongitudinalAvailable = candidate not in CC_ONLY_CAR
+      ret.experimentalLongitudinalAvailable = True
       ret.networkLocation = NetworkLocation.fwdCamera
       ret.radarUnavailable = True  # no radar
       ret.pcmCruise = True
@@ -242,7 +242,7 @@ class CarInterface(CarInterfaceBase):
 
     elif candidate == CAR.CADILLAC_CT6_CC:
       CarInterfaceBase.configure_torque_tune(candidate, ret.lateralTuning)
-    
+
     elif candidate == CAR.CHEVROLET_MALIBU_CC:
       ret.steerActuatorDelay = 0.2
       CarInterfaceBase.configure_torque_tune(candidate, ret.lateralTuning)
@@ -271,12 +271,13 @@ class CarInterface(CarInterfaceBase):
         ret.vEgoStarting = 0.25
 
     elif candidate in CC_ONLY_CAR:
-      ret.flags |= GMFlags.CC_LONG.value
-      ret.safetyConfigs[0].safetyParam |= Panda.FLAG_GM_CC_LONG
+      ret.experimentalLongitudinalAvailable = True
+      if experimental_long:
+        ret.flags |= GMFlags.CC_LONG.value
+        ret.safetyConfigs[0].safetyParam |= Panda.FLAG_GM_CC_LONG
+        ret.openpilotLongitudinalControl = True
       ret.radarUnavailable = True
-      ret.experimentalLongitudinalAvailable = False
       ret.minEnableSpeed = 24 * CV.MPH_TO_MS
-      ret.openpilotLongitudinalControl = True
       ret.pcmCruise = False
 
       ret.stoppingDecelRate = 11.18  # == 25 mph/s (.04 rate)
