@@ -267,7 +267,7 @@ class CarInterface(CarInterfaceBase):
         ret.openpilotLongitudinalControl = True
       ret.radarUnavailable = True
       ret.minEnableSpeed = 24 * CV.MPH_TO_MS
-      ret.pcmCruise = False
+      ret.pcmCruise = True
 
       ret.stoppingDecelRate = 11.18  # == 25 mph/s (.04 rate)
 
