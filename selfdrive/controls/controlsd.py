@@ -152,6 +152,7 @@ class Controls:
     self.personality = self.read_personality_param()
     self.v_cruise_helper = VCruiseHelper(self.CP)
     self.recalibrating_seen = False
+    self.resume_prev_button = False
 
     self.can_log_mono_time = 0
 
@@ -510,7 +511,7 @@ class Controls:
           else:
             self.state = State.enabled
           self.current_alert_types.append(ET.ENABLE)
-          self.v_cruise_helper.initialize_v_cruise(CS, self.experimental_mode)
+          self.v_cruise_helper.initialize_v_cruise(CS, self.experimental_mode, self.resume_prev_button)
 
     # Check if openpilot is engaged and actuators are enabled
     self.enabled = self.state in ENABLED_STATES
@@ -520,6 +521,11 @@ class Controls:
 
   def state_control(self, CS):
     """Given the state, this function returns a CarControl packet"""
+
+    if any(be.type in (ButtonType.accelCruise, ButtonType.resumeCruise) for be in CS.buttonEvents):
+      self.resume_prev_button = True
+    elif any(be.type in (ButtonType.decelCruise, ButtonType.setCruise) for be in CS.buttonEvents):
+      self.resume_prev_button = False
 
     # Update VehicleModel
     lp = self.sm['liveParameters']

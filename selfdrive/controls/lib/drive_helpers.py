@@ -5,6 +5,7 @@ from openpilot.common.conversions import Conversions as CV
 from openpilot.common.numpy_fast import clip
 from openpilot.common.realtime import DT_CTRL
 from openpilot.system.version import get_build_metadata
+from openpilot.selfdrive.car.gm.values import GMFlags, CC_ONLY_CAR
 
 EventName = car.CarEvent.EventName
 
@@ -42,6 +43,7 @@ CRUISE_INTERVAL_SIGN = {
 class VCruiseHelper:
   def __init__(self, CP):
     self.CP = CP
+    self.gm_cc_only = self.CP.carFingerprint in CC_ONLY_CAR and self.CP.flags & GMFlags.CC_LONG.value
     self.v_cruise_kph = V_CRUISE_UNSET
     self.v_cruise_cluster_kph = V_CRUISE_UNSET
     self.v_cruise_kph_last = 0
@@ -56,7 +58,7 @@ class VCruiseHelper:
     self.v_cruise_kph_last = self.v_cruise_kph
 
     if CS.cruiseState.available:
-      if not self.CP.pcmCruise:
+      if not self.CP.pcmCruise or self.gm_cc_only:
         # if stock cruise is completely disabled, then we can use our own set speed logic
         self._update_v_cruise_non_pcm(CS, enabled, is_metric)
         self.v_cruise_cluster_kph = self.v_cruise_kph
@@ -128,15 +130,15 @@ class VCruiseHelper:
         self.button_timers[b.type.raw] = 1 if b.pressed else 0
         self.button_change_states[b.type.raw] = {"standstill": CS.cruiseState.standstill, "enabled": enabled}
 
-  def initialize_v_cruise(self, CS, experimental_mode: bool) -> None:
+  def initialize_v_cruise(self, CS, experimental_mode: bool, resume_prev_button) -> None:
     # initializing is handled by the PCM
-    if self.CP.pcmCruise:
+    if self.CP.pcmCruise and not self.gm_cc_only:
       return
 
     initial = V_CRUISE_INITIAL_EXPERIMENTAL_MODE if experimental_mode else V_CRUISE_INITIAL
 
     # 250kph or above probably means we never had a set speed
-    if any(b.type in (ButtonType.accelCruise, ButtonType.resumeCruise) for b in CS.buttonEvents) and self.v_cruise_kph_last < 250:
+    if (any(b.type in (ButtonType.accelCruise, ButtonType.resumeCruise) for b in CS.buttonEvents) or (self.gm_cc_only and resume_prev_button)) and self.v_cruise_kph_last < 250:
       self.v_cruise_kph = self.v_cruise_kph_last
     else:
       self.v_cruise_kph = int(round(clip(CS.vEgo * CV.MS_TO_KPH, initial, V_CRUISE_MAX)))
