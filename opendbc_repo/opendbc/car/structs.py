@@ -390,6 +390,7 @@ class CarParams:
   networkLocation: 'CarParams.NetworkLocation' = field(default_factory=lambda: CarParams.NetworkLocation.fwdCamera)
 
   wheelSpeedFactor: float = auto_field()  # Multiplier on wheels speeds to computer actual speeds
+  enableGasInterceptorDEPRECATED: bool = auto_field()
 
   @auto_dataclass
   class LongitudinalPIDTuning:
