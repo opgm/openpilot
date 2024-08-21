@@ -1,7 +1,7 @@
 from cereal import car
 import cereal.messaging as messaging
 from opendbc.car import DT_CTRL, structs
-from opendbc.car.gm.values import GMFlags
+from opendbc.car.gm.values import GMFlags, SDGM_CAR
 from opendbc.car.interfaces import MAX_CTRL_SPEED, CarStateBase, CarControllerBase
 from opendbc.car.volkswagen.values import CarControllerParams as VWCarControllerParams
 from opendbc.car.hyundai.interface import ENABLE_BUTTONS as HYUNDAI_ENABLE_BUTTONS
@@ -124,7 +124,7 @@ class CarSpecificEvents:
       # TODO: verify 17 Volt can enable for the first time at a stop and allow for all GMs
       below_min_enable_speed = CS.out.vEgo < self.CP.minEnableSpeed or CS.moving_backward  # type: ignore[attr-defined]
       if below_min_enable_speed and not (CS.out.standstill and CS.out.brake >= 20 and
-                                         self.CP.networkLocation == NetworkLocation.fwdCamera):
+                                         self.CP.networkLocation == NetworkLocation.fwdCamera and not self.CP.carFingerprint in SDGM_CAR):
         events.add(EventName.belowEngageSpeed)
       if CS.out.cruiseState.standstill and not self.CP.autoResumeSng:
         events.add(EventName.resumeRequired)

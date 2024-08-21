@@ -7,7 +7,7 @@ from opendbc.car import get_safety_config, get_friction, structs
 from opendbc.car.common.basedir import BASEDIR
 from opendbc.car.common.conversions import Conversions as CV
 from opendbc.car.gm.radar_interface import RADAR_HEADER_MSG
-from opendbc.car.gm.values import CAR, CarControllerParams, EV_CAR, CAMERA_ACC_CAR, CanBus, GMFlags, CC_ONLY_CAR
+from opendbc.car.gm.values import CAR, CarControllerParams, EV_CAR, CAMERA_ACC_CAR, CanBus, GMFlags, CC_ONLY_CAR, SDGM_CAR
 from opendbc.car.interfaces import CarInterfaceBase, TorqueFromLateralAccelCallbackType, FRICTION_THRESHOLD, LatControlInputs, NanoFFModel
 
 TransmissionType = structs.CarParams.TransmissionType
@@ -120,6 +120,16 @@ class CarInterface(CarInterfaceBase):
         ret.openpilotLongitudinalControl = True
         ret.safetyConfigs[0].safetyParam |= Panda.FLAG_GM_HW_CAM_LONG
 
+    elif candidate in SDGM_CAR:
+      ret.longitudinalTuning.kiV = [0., 0.]  # TODO: tuning
+      ret.experimentalLongitudinalAvailable = False
+      ret.networkLocation = NetworkLocation.fwdCamera
+      ret.pcmCruise = True
+      ret.radarUnavailable = True
+      ret.minEnableSpeed = -1.  # engage speed is decided by ASCM
+      ret.minSteerSpeed = 30 * CV.MPH_TO_MS
+      ret.safetyConfigs[0].safetyParam |= Panda.FLAG_GM_HW_SDGM
+
     else:  # ASCM, OBD-II harness
       ret.openpilotLongitudinalControl = True
       ret.networkLocation = NetworkLocation.gateway
@@ -204,6 +214,25 @@ class CarInterface(CarInterfaceBase):
     elif candidate in (CAR.CHEVROLET_TRAILBLAZER, CAR.CHEVROLET_TRAILBLAZER_CC):
       ret.steerActuatorDelay = 0.2
       CarInterfaceBase.configure_torque_tune(candidate, ret.lateralTuning)
+
+    elif candidate == CAR.CADILLAC_XT4:
+      ret.steerActuatorDelay = 0.2
+      CarInterfaceBase.configure_torque_tune(candidate, ret.lateralTuning)
+
+    elif candidate == CAR.CADILLAC_XT5_CC:
+      ret.steerActuatorDelay = 0.2
+      CarInterfaceBase.configure_torque_tune(candidate, ret.lateralTuning)
+
+    elif candidate == CAR.CHEVROLET_TRAVERSE:
+      ret.steerActuatorDelay = 0.2
+      ret.minSteerSpeed = 10 * CV.KPH_TO_MS
+      CarInterfaceBase.configure_torque_tune(candidate, ret.lateralTuning)
+
+    elif candidate == CAR.BUICK_BABYENCLAVE:
+      ret.steerActuatorDelay = 0.2
+      ret.minSteerSpeed = 10 * CV.KPH_TO_MS
+      CarInterfaceBase.configure_torque_tune(candidate, ret.lateralTuning)
+
 
     if ret.enableGasInterceptorDEPRECATED:
       ret.networkLocation = NetworkLocation.fwdCamera
