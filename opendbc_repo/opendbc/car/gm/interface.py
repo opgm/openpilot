@@ -7,7 +7,7 @@ from opendbc.car import get_safety_config, get_friction, structs
 from opendbc.car.common.basedir import BASEDIR
 from opendbc.car.common.conversions import Conversions as CV
 from opendbc.car.gm.radar_interface import RADAR_HEADER_MSG
-from opendbc.car.gm.values import CAR, CarControllerParams, EV_CAR, CAMERA_ACC_CAR, CanBus
+from opendbc.car.gm.values import CAR, CarControllerParams, EV_CAR, CAMERA_ACC_CAR, CanBus, GMFlags
 from opendbc.car.interfaces import CarInterfaceBase, TorqueFromLateralAccelCallbackType, FRICTION_THRESHOLD, LatControlInputs, NanoFFModel
 
 TransmissionType = structs.CarParams.TransmissionType
@@ -21,6 +21,8 @@ NON_LINEAR_TORQUE_PARAMS = {
 
 NEURAL_PARAMS_PATH = os.path.join(BASEDIR, 'torque_data/neural_ff_weights.json')
 
+CAM_MSG = 0x320  # AEBCmd
+                 # TODO: Is this always linked to camera presence?H
 
 class CarInterface(CarInterfaceBase):
   @staticmethod
