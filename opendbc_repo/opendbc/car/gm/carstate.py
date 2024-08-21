@@ -5,12 +5,12 @@ from opendbc.car import create_button_events, structs
 from opendbc.car.common.conversions import Conversions as CV
 from opendbc.car.common.numpy_fast import mean
 from opendbc.car.interfaces import CarStateBase
-from opendbc.car.gm.values import DBC, AccState, CanBus, CruiseButtons, STEER_THRESHOLD, GMFlags, CC_ONLY_CAR
+from opendbc.car.gm.values import DBC, AccState, CanBus, CruiseButtons, STEER_THRESHOLD, GMFlags, CC_ONLY_CAR, CAMERA_ACC_CAR
 
 ButtonType = structs.CarState.ButtonEvent.Type
 TransmissionType = structs.CarParams.TransmissionType
 NetworkLocation = structs.CarParams.NetworkLocation
-GearShifter = car.CarState.GearShifter
+GearShifter = structs.CarState.GearShifter
 
 STANDSTILL_THRESHOLD = 10 * 0.0311 * CV.KPH_TO_MS
 
@@ -91,7 +91,8 @@ class CarState(CarStateBase):
 
     if self.CP.enableGasInterceptorDEPRECATED:
       ret.gas = (pt_cp.vl["GAS_SENSOR"]["INTERCEPTOR_GAS"] + pt_cp.vl["GAS_SENSOR"]["INTERCEPTOR_GAS2"]) / 2.
-      ret.gasPressed = ret.gas > 3
+      threshold = 15 if self.CP.carFingerprint in CAMERA_ACC_CAR else 4
+      ret.gasPressed = ret.gas > threshold
     else:
       ret.gas = pt_cp.vl["AcceleratorPedal2"]["AcceleratorPedal2"] / 254.
       ret.gasPressed = ret.gas > 1e-5
