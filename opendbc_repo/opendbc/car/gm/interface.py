@@ -246,9 +246,9 @@ class CarInterface(CarInterfaceBase):
 
     elif candidate in CC_ONLY_CAR:
       ret.experimentalLongitudinalAvailable = True
+      ret.flags |= GMFlags.CC_LONG.value
+      ret.safetyConfigs[0].safetyParam |= Panda.FLAG_GM_CC_LONG
       if experimental_long:
-        ret.flags |= GMFlags.CC_LONG.value
-        ret.safetyConfigs[0].safetyParam |= Panda.FLAG_GM_CC_LONG
         ret.openpilotLongitudinalControl = True
       ret.radarUnavailable = True
       ret.minEnableSpeed = 24 * CV.MPH_TO_MS
