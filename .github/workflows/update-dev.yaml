@@ -4,11 +4,6 @@ on:
   workflow_dispatch:
   schedule:
     - cron: '0 0 * * *'
-      branches:
-        - dev
-  push:
-    branches:
-      - dev
 
 jobs:
   update-dev:
