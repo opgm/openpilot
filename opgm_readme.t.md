@@ -1,41 +1,51 @@
 # OPGM openpilot fork
+> Latest build info
+> - date: {{time.Now.Format "January 02, 2006"}}
+> - upstream commit: [`{{.Env.COMMIT | strings.Trunc 10}}`](https://github.com/commaai/openpilot/tree/{{.Env.COMMIT}})
 
-This is a fork of [openpilot](https://github.com/commaai/openpilot/), an open source driver assistance system. Please
-consult the official documentation for most questions.
+OPGM is a fork of [openpilot](https://github.com/commaai/openpilot/), an open source driver assistance system. Please consult the official documentation for most questions.
 
-OPGM strives to align as closely to the official openpilot as possible, while adding functionality for GM vehicles that
-are officially unsupported. Additionally, OPGM adds some creature comforts and quality of life improvements.
-
-OPGM will be rebased on top of the official openpilot frequently to keep up with upstream changes. The latest sync was
-with commit [`{{.Env.COMMIT | strings.Trunc 10}}`](https://github.com/commaai/openpilot/tree/{{.Env.COMMIT}}) from the
-master branch. The latest build was done on {{time.Now.Format "January 02, 2006"}}.
-
-## Features
-* Support for GM vehicles with LKAS but no ACC
-* Pedal interceptor support for longitudinal control
-  * Also provides full regen on GM Bolt EV/EUV with ACC (*in process of upstreaming*)
-* CC long, aka "[redneck ACC](https://www.youtube.com/watch?v=41wZ1EAmf94)" to automatically adjust nonadaptive cruise
-control
-  * > CC long is not a substitute for ACC. It is incapable of reducing the vehicle speed below 24mph.
-* Neural network steering control, credit twilsonco
-* Always On Lateral (AOL), credit pfeiferj
+## How to use:
+1. Ensure your vehicle is on the supported vehicle list (see below).
+2. Install a Comma 3 or Comma 3X and wiring harness
+   - (Optional) If you have an EV, a [Comma pedal](https://shop.tlbb.ca/) is highly recommended.
+3. Type `opgm.cc` in the software installation screen
+4. (Optional) Turn on openpilot longitudinal control in the settings for "[redneck ACC](https://www.youtube.com/watch?v=41wZ1EAmf94)"
 
 ## Supported vehicles list
-OPGM is capable of supportng vehicles on the Global A architecture that have factory LKAS. Currently supported vehicles
-include:
-* All vehicles supported by upstream openpilot
+If your car works on stock openpilot, you should not use OPGM. The software will likely work without issue, but support from OPGM is not guaranteed since you have official support upstream.
+
+### Non-ACC GM cars
+These cars **must** come with factory LKAS or there is no guarantee that openpilot will work!
 * 2016-2019 Chevrolet Volt
 * 2017-2019 Chevrolet Bolt EV
-* 2020-2023 Chevrolet Bolt EV/EUV w/o ACC
-* Chevrolet Equinox/GMC Terrain w/o ACC
-* Chevrolet Tahoe/GMC Yukon w/o ACC
-* Chevrolet Suburban w/o ACC
+* 2020-2023 Chevrolet Bolt EV/EUV
+* Chevrolet Equinox/GMC Terrain
+* Chevrolet Tahoe/GMC Yukon
+* Chevrolet Suburban
+* Chevrolet Trailblazer
+* Chevrolet Malibu
+* Cadillac XT5
+* Cadillac CT6
+#### Required hardware
+Buy the GM harness bundle with your C3X.
 
-If your vehicle is not on this list, there is a very good chance that already is or can be supported! You will need to
-collect your vehicle's fingerprint.
+If you want to use a Comma Pedal, you will need the following instead:
+- C3X
+- GM harness **wires only**
+- [old style harness box](https://oneclone.net/product/fresh-orange-juice/)
 
-> At this time, Global B and VIP architectures are unsupported due to CAN bus encryption. If you have a vehicle on one
-> of these architectures and consider yourself to be a hacker/tinkerer type, we would love to hear from you!
+### SDGM cars
+These cars have a Serial Data Gateway Module and require a special wiring harness.
+* 2019 Chevrolet Volt
+* Cadillac XT4
+* Chevrolet Traverse
+* Buick Baby Enclave
+#### Required hardware
+TODO
+
+
+> At this time, the Global B (VIP) architecture is unsupported due to CAN bus encryption. If you have a vehicle on one of these architectures and consider yourself to be a hacker/tinkerer type, we would love to hear from you!
 
 ### Fingerprinting your vehicle
 Note! You likely do not have to do this. Try installing OPGM first, and only proceed with the fingerprinting process if
@@ -81,22 +91,26 @@ To be sure that your car is completely powered down:
 
 ## Known issues
 * Curve hugging and laneline crossing are known issues of upstream openpilot.
-* Officially supported cars (e.g. ACC Volt and Bolt) may have issues fingerprinting on OPGM. Currently, the only workaround is to hardcode your fingerprint in the `/data/openpilot/launch_openpilot.sh` file.
+* Officially supported cars (e.g. ACC Volt and Bolt) may have issues fingerprinting on OPGM. Currently, the only workaround is to hardcode your fingerprint in the `/data/openpilot/launch_env.sh` file.
 
 ## Discussion
 Come join us on the OPGM channel in the [openpilot community discord](https://discord.gg/KGWEdwSnCU)!
 
 ## Contributing
-Feel free to open a pull request against the `dev` branch.
+Contributions are welcome, but please note the following:
+1. All pull requests should be opened against the `dev` branch.
+2. OPGM does not accept requests to support cars that meet Comma's minimum supportability requirements. Work on supporting such cars should be done upstream on stock openpilot.
+3. OPGM generally does not accept features outside the very narrow scope of "minimum functionality". Such features should be proposed upstream or included in other community forks.
 
 ## Credits
+### Current contributors
 * [comma.ai](https://comma.ai) for openpilot
-* jshuler
-* nworby
-* twilsonco
-* k1mu
-* kliu
+* nworby (BDFL)
 * mochi86420
+
+### Past contributors
+* jshuler (father of OPGM)
+* twilsonco
 * Many others
 
 # License
