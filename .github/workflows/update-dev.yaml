@@ -1,0 +1,136 @@
+name: Update Dev
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * *'
+
+jobs:
+  update-dev:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.CI_GITHUB_TOKEN }}
+
+    - name: Set up Git
+      run: |
+        git config --global user.name "OPGM CI Automated"
+        git config --global user.email "ci@opgm.cc"
+        git remote add upstream https://github.com/commaai/openpilot.git
+
+    - name: Fetch branches
+      run: |
+        git fetch origin dev
+        git fetch upstream master
+        git fetch upstream master-ci
+
+    - name: Cache Docker layers
+      uses: actions/cache@v3
+      with:
+        path: /tmp/.docker-cache
+        key: ${{ runner.os }}-docker-${{ hashFiles('**/Dockerfile') }}
+        restore-keys: |
+          ${{ runner.os }}-docker-
+
+    - name: Push dev to backup branch
+      run: |
+        backup_branch_name="dev-bkp-$(date -u +%Y-%m-%d)"
+        git checkout -f dev
+        git switch -c $backup_branch_name
+        git push -f origin $backup_branch_name --no-verify
+
+    - name: Unsubmodule master
+      run: |
+        declare -a submodules=("panda" "msgq_repo" "opendbc" "body" "rednose_repo" "tinygrad_repo" "teleoprtc_repo")
+        function unsubmodule() {
+          for submodule in $submodules; do
+            mv $submodule .tmp
+            git submodule deinit -f $submodule
+            git rm -f $submodule
+            mv .tmp $submodule
+            rm -rf $submodule/.git
+            rm -rf $submodule/.github
+            git add $submodule
+          done
+          git rm -f .gitmodules
+        }
+        git checkout -f upstream/master
+        git reset --hard upstream/master
+        rm -rf $submodules
+        git submodule init
+        git submodule update
+        git branch -D unsubmoduled || :
+        git switch -c unsubmoduled
+        unsubmodule
+        git commit -am "I h8 submodules" --author="OPGM CI Automated <ci@opgm.cc>"
+
+    - name: Prepare dev-new branch
+      run: |
+        git checkout -f upstream/master-ci
+        git reset --hard upstream/master-ci
+        git branch -D dev-new || :
+        git switch -c dev-new
+        git checkout unsubmoduled panda/tests/
+        git commit -am "Re-add panda tests" --author="OPGM CI Automated <ci@opgm.cc>" --no-verify
+        git checkout upstream/master tools
+        git checkout upstream/master .github
+        git checkout upstream/master Dockerfile.openpilot
+        git commit -am "Re-add tools" --author="OPGM CI Automated <ci@opgm.cc>" --no-verify
+
+    - name: Cherry-pick dev commits onto dev-new
+      run: |
+        commit_hash=$(git log --pretty=format:"%H %s" | grep -E 'openpilot v[0-9]+\.[0-9]+\.[0-9]+ release' | head -n 1 | cut -d ' ' -f 1)
+        # Get all commit hashes after and including the found commit hash
+        if [ -n "$commit_hash" ]; then
+          diverged_commits=$(git log --pretty=format:"%H" --reverse $commit_hash..origin/dev | tail -n +3)
+          echo "Will cherry-pick the following commits:"
+          for commit in $diverged_commits; do
+            echo "  $commit : $(git log -1 --pretty=format:"%s" $commit)"
+          done
+        else
+          echo "Commit with the message 'Initial commit' not found."
+          exit 1
+        fi
+        if [ -z "$diverged_commits" ]; then
+          echo "Error: no commits to cherry-pick"
+          exit 1
+        fi
+        git checkout -f dev-new
+        skip_commits=[]
+        for commit in $diverged_commits; do
+          if [[ $skip_commits =~ $commit ]]; then
+            echo "Skipping $commit"
+            continue
+          fi
+          echo "Cherry-picking $commit : $(git log -1 --pretty=format:"%s" $commit)"
+          git cherry-pick $commit || exit 1
+        done
+
+    - name: Build docker image
+      run: |
+        docker build -t openpilot -f Dockerfile.openpilot --cache-from type=local,src=/tmp/.docker-cache .
+
+    - name: Test panda
+      run: |
+        docker run --rm openpilot panda/tests/safety/test.sh
+
+    - name: Test selfdrive
+      run: |
+        docker run --rm openpilot pytest opendbc_repo/opendbc/car/tests/
+
+    - name: Push dev-new to dev
+      run: |
+        git checkout -f dev-new
+        git branch -D dev || :
+        git switch -c dev
+        git push -f origin dev --no-verify
+
+    - name: Save Docker cache
+      if: success()
+      uses: actions/cache@v3
+      with:
+        path: /tmp/.docker-cache
+        key: ${{ runner.os }}-docker-${{ hashFiles('**/Dockerfile') }}
