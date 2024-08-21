@@ -244,6 +244,7 @@ class CanBus:
 
 class GMFlags(IntFlag):
   PEDAL_LONG = 1
+  CC_LONG = 2
   NO_CAMERA = 4
 
 
