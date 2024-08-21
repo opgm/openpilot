@@ -247,6 +247,26 @@ class CarInterface(CarInterfaceBase):
         ret.longitudinalTuning.kiV = [0.0, 0.35, 0.5]
         ret.longitudinalTuning.kf = 0.15
         ret.stoppingDecelRate = 0.8
+      else:  # Pedal used for SNG, ACC for longitudinal control otherwise
+        ret.startingState = True
+        ret.vEgoStopping = 0.25
+        ret.vEgoStarting = 0.25
+
+    elif candidate in CC_ONLY_CAR:
+      ret.experimentalLongitudinalAvailable = True
+      ret.safetyConfigs[0].safetyParam |= Panda.FLAG_GM_CC_LONG
+      if experimental_long:
+        ret.openpilotLongitudinalControl = True
+        ret.flags |= GMFlags.CC_LONG.value
+      ret.radarUnavailable = True
+      ret.minEnableSpeed = 24 * CV.MPH_TO_MS
+      ret.pcmCruise = True
+
+      ret.stoppingDecelRate = 11.18  # == 25 mph/s (.04 rate)
+
+      ret.longitudinalTuning.kiBP = [10.7, 10.8, 28.]
+      ret.longitudinalTuning.kiV = [0., 20., 20.]  # set lower end to 0 since we can't drive below that speed
+
 
     if candidate in CC_ONLY_CAR:
       ret.safetyConfigs[0].safetyParam |= Panda.FLAG_GM_NO_ACC
