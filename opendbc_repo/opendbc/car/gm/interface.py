@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
+import json
 import os
-from math import fabs, exp
+from math import exp
 from panda import Panda
 
 from opendbc.car import get_safety_config, get_friction, structs
@@ -30,19 +31,6 @@ class CarInterface(CarInterfaceBase):
   @staticmethod
   def get_pid_accel_limits(CP, current_speed, cruise_speed):
     return CarControllerParams.ACCEL_MIN, CarControllerParams.ACCEL_MAX
-
-  # Determined by iteratively plotting and minimizing error for f(angle, speed) = steer.
-  @staticmethod
-  def get_steer_feedforward_volt(desired_angle, v_ego):
-    desired_angle *= 0.02904609
-    sigmoid = desired_angle / (1 + fabs(desired_angle))
-    return 0.10006696 * sigmoid * (v_ego + 3.12485927)
-
-  def get_steer_feedforward_function(self):
-    if self.CP.carFingerprint in (CAR.CHEVROLET_VOLT, CAR.CHEVROLET_VOLT_CC):
-      return self.get_steer_feedforward_volt
-    else:
-      return CarInterfaceBase.get_steer_feedforward_default
 
   def torque_from_lateral_accel_siglin(self, latcontrol_inputs: LatControlInputs, torque_params: structs.CarParams.LateralTorqueTuning,
                                        lateral_accel_error: float, lateral_accel_deadzone: float, friction_compensation: bool, gravity_adjusted: bool) -> float:
@@ -75,7 +63,9 @@ class CarInterface(CarInterfaceBase):
     return float(self.neural_ff_model.predict(inputs)) + friction
 
   def torque_from_lateral_accel(self) -> TorqueFromLateralAccelCallbackType:
-    if self.CP.carFingerprint in (CAR.CHEVROLET_BOLT_EUV, CAR.CHEVROLET_BOLT_CC):
+    with open(NEURAL_PARAMS_PATH) as f:
+      neural_ff_cars = json.load(f).keys()
+    if self.CP.carFingerprint in neural_ff_cars:
       self.neural_ff_model = NanoFFModel(NEURAL_PARAMS_PATH, self.CP.carFingerprint)
       return self.torque_from_lateral_accel_neural
     elif self.CP.carFingerprint in NON_LINEAR_TORQUE_PARAMS:
@@ -155,14 +145,10 @@ class CarInterface(CarInterfaceBase):
     ret.steerLimitTimer = 0.4
     ret.longitudinalActuatorDelay = 0.5  # large delay to initially start braking
 
-    if candidate in (CAR.CHEVROLET_VOLT, CAR.CHEVROLET_VOLT_CC):
+    if candidate == CAR.CHEVROLET_VOLT:
       ret.minEnableSpeed = -1
-      ret.lateralTuning.pid.kpBP = [0., 40.]
-      ret.lateralTuning.pid.kpV = [0., 0.17]
-      ret.lateralTuning.pid.kiBP = [0.]
-      ret.lateralTuning.pid.kiV = [0.]
-      ret.lateralTuning.pid.kf = 1.  # get_steer_feedforward_volt()
       ret.steerActuatorDelay = 0.2
+      CarInterfaceBase.configure_torque_tune(candidate, ret.lateralTuning)
 
     elif candidate == CAR.GMC_ACADIA:
       ret.minEnableSpeed = -1.  # engage speed is decided by pcm
