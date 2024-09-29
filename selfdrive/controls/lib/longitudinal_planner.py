@@ -124,7 +124,7 @@ class LongitudinalPlanner:
       x = max(lp.stiffnessFactor, 0.1)
       sr = max(lp.steerRatio, 0.1)
       self.VM.update_params(x, sr)
-      current_curvature = self.VM.calc_curvature(math.radians(CS.steeringAngleDeg - lp.angleOffsetDeg), CS.vEgo, lp.roll)
+      current_curvature = self.VM.calc_curvature(math.radians(CS.steeringAngleDeg - lp.angleOffsetAverageDeg), CS.vEgo, lp.roll)
       current_lateral_accel = current_curvature * CS.vEgo ** 2
 
       accel_limits_turns = limit_accel_in_turns(v_ego, current_lateral_accel, accel_limits, self.CP)
