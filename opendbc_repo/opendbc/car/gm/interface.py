@@ -22,6 +22,7 @@ NON_LINEAR_TORQUE_PARAMS = {
 
 NEURAL_PARAMS_PATH = os.path.join(BASEDIR, 'torque_data/neural_ff_weights.json')
 
+PEDAL_MSG = 0x201
 CAM_MSG = 0x320  # AEBCmd
                  # TODO: Is this always linked to camera presence?
 
@@ -88,6 +89,9 @@ class CarInterface(CarInterfaceBase):
     ret.safetyConfigs = [get_safety_config(structs.CarParams.SafetyModel.gm)]
     ret.autoResumeSng = False
     ret.enableBsm = 0x142 in fingerprint[CanBus.POWERTRAIN]
+    if PEDAL_MSG in fingerprint[0]:
+      ret.enableGasInterceptorDEPRECATED = True
+      ret.safetyConfigs[0].safetyParam |= Panda.FLAG_GM_GAS_INTERCEPTOR
 
     if candidate in EV_CAR:
       ret.transmissionType = TransmissionType.direct
@@ -127,6 +131,9 @@ class CarInterface(CarInterfaceBase):
 
       # Tuning
       ret.longitudinalTuning.kiV = [2.4, 1.5]
+      if ret.enableGasInterceptorDEPRECATED:
+        # Need to set ASCM long limits when using pedal interceptor, instead of camera ACC long limits
+        ret.safetyConfigs[0].safetyParam |= Panda.FLAG_GM_HW_ASCM_LONG
 
     # These cars have been put into dashcam only due to both a lack of users and test coverage.
     # These cars likely still work fine. Once a user confirms each car works and a test route is
@@ -182,6 +189,10 @@ class CarInterface(CarInterfaceBase):
       ret.steerActuatorDelay = 0.2
       CarInterfaceBase.configure_torque_tune(candidate, ret.lateralTuning)
 
+      if ret.enableGasInterceptorDEPRECATED:
+        # ACC Bolts use pedal for full longitudinal control, not just sng
+        ret.flags |= GMFlags.PEDAL_LONG.value
+
     elif candidate == CAR.CHEVROLET_SILVERADO:
       # On the Bolt, the ECM and camera independently check that you are either above 5 kph or at a stop
       # with foot on brake to allow engagement, but this platform only has that check in the camera.
@@ -209,6 +220,23 @@ class CarInterface(CarInterfaceBase):
     elif candidate == CAR.CHEVROLET_TRAVERSE:
       ret.steerActuatorDelay = 0.2
       CarInterfaceBase.configure_torque_tune(candidate, ret.lateralTuning)
+
+    if ret.enableGasInterceptorDEPRECATED:
+      ret.networkLocation = NetworkLocation.fwdCamera
+      ret.safetyConfigs[0].safetyParam |= Panda.FLAG_GM_HW_CAM
+      ret.minEnableSpeed = -1
+      ret.pcmCruise = False
+      ret.openpilotLongitudinalControl = True
+      ret.autoResumeSng = True
+
+      if candidate in CC_ONLY_CAR:
+        ret.flags |= GMFlags.PEDAL_LONG.value
+        ret.safetyConfigs[0].safetyParam |= Panda.FLAG_GM_PEDAL_LONG
+        # Note: Low speed, stop and go not tested. Should be fairly smooth on highway
+        ret.longitudinalTuning.kiBP = [0.0, 5., 35.]
+        ret.longitudinalTuning.kiV = [0.0, 0.35, 0.5]
+        ret.longitudinalTuning.kf = 0.15
+        ret.stoppingDecelRate = 0.8
 
     if candidate in CC_ONLY_CAR:
       ret.safetyConfigs[0].safetyParam |= Panda.FLAG_GM_NO_ACC

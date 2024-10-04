@@ -5,11 +5,13 @@ from opendbc.car import Bus, create_button_events, structs
 from opendbc.car.common.conversions import Conversions as CV
 from opendbc.car.common.numpy_fast import mean
 from opendbc.car.interfaces import CarStateBase
-from opendbc.car.gm.values import DBC, AccState, CruiseButtons, STEER_THRESHOLD, SDGM_CAR, GMFlags, CC_ONLY_CAR
+from opendbc.car.gm.values import DBC, AccState, CruiseButtons, STEER_THRESHOLD, SDGM_CAR, GMFlags, CC_ONLY_CAR, \
+  CAMERA_ACC_CAR
 
 ButtonType = structs.CarState.ButtonEvent.Type
 TransmissionType = structs.CarParams.TransmissionType
 NetworkLocation = structs.CarParams.NetworkLocation
+GearShifter = structs.CarState.GearShifter
 
 STANDSTILL_THRESHOLD = 10 * 0.0311 * CV.KPH_TO_MS
 
@@ -30,6 +32,9 @@ class CarState(CarStateBase):
     self.pt_lka_steering_cmd_counter = 0
     self.cam_lka_steering_cmd_counter = 0
     self.buttons_counter = 0
+
+    self.single_pedal_mode = False
+    self.pedal_steady = 0.
 
     self.distance_button = 0
 
@@ -88,9 +93,15 @@ class CarState(CarStateBase):
     # Regen braking is braking
     if self.CP.transmissionType == TransmissionType.direct:
       ret.regenBraking = pt_cp.vl["EBCMRegenPaddle"]["RegenPaddle"] != 0
+      self.single_pedal_mode = ret.gearShifter == GearShifter.low or pt_cp.vl["EVDriveMode"]["SinglePedalModeActive"] == 1
 
-    ret.gas = pt_cp.vl["AcceleratorPedal2"]["AcceleratorPedal2"] / 254.
-    ret.gasPressed = ret.gas > 1e-5
+    if self.CP.enableGasInterceptorDEPRECATED:
+      ret.gas = (pt_cp.vl["GAS_SENSOR"]["INTERCEPTOR_GAS"] + pt_cp.vl["GAS_SENSOR"]["INTERCEPTOR_GAS2"]) / 2.
+      threshold = 10 if self.CP.carFingerprint in CAMERA_ACC_CAR else 4 # Panda 515 threshold = 10.88. Set lower to avoid panda blocking messages and GasInterceptor faulting.
+      ret.gasPressed = ret.gas > threshold
+    else:
+      ret.gas = pt_cp.vl["AcceleratorPedal2"]["AcceleratorPedal2"] / 254.
+      ret.gasPressed = ret.gas > 1e-5
 
     ret.steeringAngleDeg = pt_cp.vl["PSCMSteeringAngle"]["SteeringWheelAngle"]
     ret.steeringRateDeg = pt_cp.vl["PSCMSteeringAngle"]["SteeringWheelRate"]
@@ -181,11 +192,19 @@ class CarState(CarStateBase):
       ]
 
     if CP.transmissionType == TransmissionType.direct:
-      pt_messages.append(("EBCMRegenPaddle", 50))
+      pt_messages += [
+        ("EBCMRegenPaddle", 50),
+        ("EVDriveMode", 0),
+      ]
 
     if CP.carFingerprint in CC_ONLY_CAR:
       pt_messages += [
         ("ECMCruiseControl", 10),
+      ]
+
+    if CP.enableGasInterceptorDEPRECATED:
+      messages += [
+        ("GAS_SENSOR", 50),
       ]
 
     cam_messages = []
@@ -201,6 +220,8 @@ class CarState(CarStateBase):
         cam_messages += [
           ("AEBCmd", 10),
         ]
+
+    return CANParser(DBC[CP.carFingerprint]["pt"], messages, CanBus.POWERTRAIN)
 
     loopback_messages = [
       ("ASCMLKASteeringCmd", 0),
