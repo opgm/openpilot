@@ -239,6 +239,7 @@ class CanBus:
   DROPPED = 192
 
 class GMFlags(IntFlag):
+  PEDAL_LONG = 1
   NO_CAMERA = 4
 
 
