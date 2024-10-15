@@ -250,12 +250,6 @@ class CarInterface(CarInterfaceBase):
       ret.minEnableSpeed = 24 * CV.MPH_TO_MS
       ret.pcmCruise = True
 
-      ret.stoppingDecelRate = 11.18  # == 25 mph/s (.04 rate)
-
-      ret.longitudinalTuning.kiBP = [10.7, 10.8, 28.]
-      ret.longitudinalTuning.kiV = [0., 20., 20.]  # set lower end to 0 since we can't drive below that speed
-
-
     if candidate in CC_ONLY_CAR:
       ret.safetyConfigs[0].safetyParam |= Panda.FLAG_GM_NO_ACC
 
