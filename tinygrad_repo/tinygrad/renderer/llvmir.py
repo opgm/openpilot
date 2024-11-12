@@ -1,147 +1,147 @@
-from typing import Final, Dict, Callable, Any, List, Optional, Tuple
-from llvmlite import ir  # type: ignore
-from tinygrad.codegen.linearizer import UOps, UOp
-from tinygrad.helpers import dtypes
-from tinygrad.ops import Op, UnaryOps, BinaryOps, TernaryOps
+from typing import Dict, Callable, Any, List, Optional
+from llvmlite import ir
+from tinygrad.dtype import DType, PtrDType, dtypes
+from tinygrad.ops import Op, UnaryOps, BinaryOps, TernaryOps, UOps, UOp
+from tinygrad.renderer import Renderer
 
-LLVM_FAST_MATH_FLAGS = ('nsz', 'arcp', 'contract', 'afn', 'reassoc') # All from fast math, but nnan and ninf
+MFLAGS = ('nsz', 'arcp', 'contract', 'afn', 'reassoc') # All from fast math, but nnan and ninf
 
-code_for_op: Final[Dict[Op, Callable]] = {
-  UnaryOps.NEG: lambda builder,x: builder.neg(x) if isinstance(x.type, ir.IntType) else builder.fneg(x, flags=LLVM_FAST_MATH_FLAGS),
-  UnaryOps.EXP2: lambda builder,x: builder.call(builder._block.module.declare_intrinsic('llvm.exp2', [ir.FloatType()]), [x], fastmath=LLVM_FAST_MATH_FLAGS),
-  UnaryOps.LOG2: lambda builder,x: builder.call(builder._block.module.declare_intrinsic('llvm.log2', [ir.FloatType()]), [x], fastmath=LLVM_FAST_MATH_FLAGS),
-  UnaryOps.SIN: lambda builder,x: builder.call(builder._block.module.declare_intrinsic('llvm.sin', [ir.FloatType()]), [x], fastmath=LLVM_FAST_MATH_FLAGS),
-  UnaryOps.SQRT: lambda builder,x: builder.call(builder._block.module.declare_intrinsic('llvm.sqrt', [ir.FloatType()]), [x], fastmath=LLVM_FAST_MATH_FLAGS),
-  BinaryOps.ADD: lambda builder,x,y: builder.add(x,y) if isinstance(x.type, ir.IntType) else builder.fadd(x,y, flags=LLVM_FAST_MATH_FLAGS),
-  BinaryOps.SUB: lambda builder,x,y: builder.sub(x,y) if isinstance(x.type, ir.IntType) else builder.fsub(x,y, flags=LLVM_FAST_MATH_FLAGS),
-  BinaryOps.MUL: lambda builder,x,y: builder.mul(x,y) if isinstance(x.type, ir.IntType) else builder.fmul(x,y, flags=LLVM_FAST_MATH_FLAGS),
-  BinaryOps.DIV: lambda builder,x,y: builder.sdiv(x,y) if isinstance(x.type, ir.IntType) else builder.fdiv(x,y, flags=LLVM_FAST_MATH_FLAGS),
-  # TODO: this should be casted
-  BinaryOps.CMPLT: lambda builder,x,y: builder.zext(builder.icmp_signed("<", x, y),ir.IntType(32)) if isinstance(x.type, ir.IntType) else builder.uitofp(builder.fcmp_ordered("<", x, y, flags=LLVM_FAST_MATH_FLAGS), ir.FloatType()),
-  BinaryOps.MAX: lambda builder,x,y: builder.select(builder.fcmp_unordered(">", x, y, flags=LLVM_FAST_MATH_FLAGS), x, y, flags=LLVM_FAST_MATH_FLAGS),
-  BinaryOps.MOD: lambda builder,x,y: builder.srem(x,y),
-  TernaryOps.MULACC: lambda builder,x,y,z: builder.fadd(builder.fmul(x,y, flags=LLVM_FAST_MATH_FLAGS), z, flags=LLVM_FAST_MATH_FLAGS),
-  TernaryOps.WHERE: lambda builder,x,y,z: builder.select(builder.fcmp_unordered("!=", x, ir.Constant(ir.FloatType(), 0), flags=LLVM_FAST_MATH_FLAGS) if isinstance(x.type, ir.FloatType) else builder.trunc(x, ir.IntType(1)), y, z, flags=LLVM_FAST_MATH_FLAGS),
-}
+def is_bool_or_unsigned(dtype: DType): return dtype == dtypes.bool or dtypes.is_unsigned(dtype)
 
-dtype_to_llvm_dtype = {dtypes.float64:ir.DoubleType(), dtypes.float16:ir.HalfType(), dtypes.bfloat16:ir.IntType(16), dtypes.float32:ir.FloatType(), dtypes.int8:ir.IntType(8), dtypes.uint8:ir.IntType(8), dtypes.bool: ir.IntType(1), dtypes.int64: ir.IntType(64), dtypes.int32: ir.IntType(32), dtypes._arg_int32: ir.IntType(32), dtypes.int16:ir.IntType(16), dtypes.uint16:ir.IntType(16), dtypes.uint32:ir.IntType(32), dtypes.uint64:ir.IntType(64)}
+dtype_to_llvm_dtype = { dtypes.bool:ir.IntType(1), dtypes.int8:ir.IntType(8), dtypes.uint8:ir.IntType(8), dtypes.int16:ir.IntType(16),
+  dtypes.uint16:ir.IntType(16), dtypes.int32:ir.IntType(32), dtypes.uint32:ir.IntType(32), dtypes.int64:ir.IntType(64), dtypes.uint64:ir.IntType(64),
+  dtypes.float16:ir.HalfType(), dtypes.bfloat16:ir.IntType(16), dtypes.float32:ir.FloatType(), dtypes.float64:ir.DoubleType() }
 
-def cast(bb, val, input_type, output_type):
+def cast(bb, val, input_type, output_type, bitcast=False):
   if input_type == output_type: return val
+  llvm_type = dtype_to_llvm_dtype[output_type]
+  if bitcast: return bb[-1].bitcast(val, llvm_type)
 
-  if output_type == dtypes.float32:
-    if dtypes.is_int(input_type) or input_type == dtypes.bool:
-      val = bb[-1].uitofp(val, ir.FloatType()) if dtypes.is_unsigned(input_type) or input_type == dtypes.bool else bb[-1].sitofp(val, ir.FloatType())
-    elif input_type == dtypes.bfloat16:
-      val = bb[-1].sext(val, ir.IntType(32))
-      val = bb[-1].shl(val, ir.Constant(ir.IntType(32), 16))
-      val = bb[-1].bitcast(val, ir.FloatType())
-    elif input_type == dtypes.float64:
-      val = bb[-1].fptrunc(val, ir.FloatType())
-    else:
-      val = bb[-1].fpext(val, ir.FloatType())
-    return val
+  if input_type == dtypes.bfloat16:
+    val = bb[-1].bitcast(bb[-1].shl(bb[-1].sext(val, ir.IntType(32)), ir.Constant(ir.IntType(32), 16)),val, ir.FloatType())
+    input_type = dtypes.float32
+  if output_type == dtypes.bfloat16:
+    val = cast(bb, val, input_type, dtypes.float32)
+    return bb[-1].trunc(bb[-1].lshr(bb[-1].bitcast(val, ir.IntType(32)), ir.Constant(ir.IntType(32), 16)), ir.IntType(16))
 
-  if input_type == dtypes.float32:
-    if dtypes.is_int(output_type) or output_type == dtypes.bool:
-      if dtypes.is_unsigned(output_type): val = bb[-1].fptoui(val, dtype_to_llvm_dtype[output_type])
-      elif output_type == dtypes.bool: val = bb[-1].fcmp_ordered("!=", val, ir.Constant(ir.FloatType(), 0), flags=LLVM_FAST_MATH_FLAGS)
-      else: val = bb[-1].fptosi(val, dtype_to_llvm_dtype[output_type])
-    elif output_type == dtypes.bfloat16:
-      val = bb[-1].bitcast(val, ir.IntType(32))
-      val = bb[-1].lshr(val, ir.Constant(ir.IntType(32), 16))
-      val = bb[-1].trunc(val, ir.IntType(16))
-    elif output_type == dtypes.float64:
-      val = bb[-1].fpext(val, ir.DoubleType())
-    else:
-      val = bb[-1].fptrunc(val, dtype_to_llvm_dtype[output_type])
-    return val
+  if dtypes.is_float(input_type):
+    if dtypes.is_float(output_type):
+      return bb[-1].fpext(val, llvm_type) if output_type.itemsize > input_type.itemsize else bb[-1].fptrunc(val, llvm_type)
+    if dtypes.is_int(output_type): return bb[-1].fptoui(val, llvm_type) if dtypes.is_unsigned(output_type) else bb[-1].fptosi(val, llvm_type)
+    if output_type == dtypes.bool: return bb[-1].fcmp_unordered('!=', cast(bb, val, input_type, dtypes.float32), ir.Constant(ir.FloatType(), 0))
+
+  if dtypes.is_unsigned(input_type) or input_type == dtypes.bool:
+    if output_type == dtypes.float16: return bb[-1].fptrunc(bb[-1].uitofp(val, ir.FloatType()), ir.HalfType())
+    if dtypes.is_float(output_type): return bb[-1].uitofp(val, dtype_to_llvm_dtype[output_type])
+    if dtypes.is_int(output_type): return bb[-1].trunc(val, llvm_type) if input_type.itemsize > output_type.itemsize else bb[-1].zext(val, llvm_type)
+    if output_type == dtypes.bool: return bb[-1].icmp_unsigned('!=', val, ir.Constant(val.type, 0))
+
+  if dtypes.is_int(input_type):
+    if output_type == dtypes.float16: return bb[-1].fptrunc(bb[-1].sitofp(val, ir.FloatType()), ir.HalfType())
+    if dtypes.is_float(output_type): return bb[-1].sitofp(val, llvm_type)
+    if dtypes.is_int(output_type): return bb[-1].trunc(val, llvm_type) if input_type.itemsize > output_type.itemsize else bb[-1].sext(val, llvm_type)
+    if output_type == dtypes.bool: return bb[-1].icmp_signed('!=', val, ir.Constant(val.type, 0))
 
   raise NotImplementedError(f"cast from {input_type} -> {output_type} not implemented")
 
-def uops_to_llvm_ir(function_name:str, uops:List[UOp]) -> Tuple[str, Dict]:
-  # all llvm stuff goes into a module
-  module = ir.Module(name=__file__)
+def const(args, dtype): return ir.Constant(dtype_to_llvm_dtype[dtype], args)
 
-  # extract global buffers
-  buf_to_dtype = {args[0]:args[1] for uop,_,_,args,_ in uops if uop == UOps.DEFINE_GLOBAL}
-  buf_index = {x:i for i,x in enumerate(buf_to_dtype.keys())}
+class LLVMRenderer(Renderer):
+  device = "LLVM"
+  supports_float4 = False
+  has_local = False
+  has_shared = False
+  global_max = None
+  code_for_op: Dict[Op, Callable] = {
+    UnaryOps.RECIP: lambda builder, x, dtype: builder.fdiv(const(1, dtype), x, flags=MFLAGS),
+    UnaryOps.SQRT: lambda builder, x, dtype: builder.call(builder.module.declare_intrinsic('llvm.sqrt', [x.type]), [x], fastmath=MFLAGS),
+    BinaryOps.ADD: lambda builder, x, y, dtype: builder.or_(x, y) if dtype == dtypes.bool else builder.add(x, y) if dtypes.is_int(dtype) else builder.fadd(x, y, flags=MFLAGS),  # noqa: E501
+    BinaryOps.MUL: lambda builder, x, y, dtype: builder.mul(x, y) if is_bool_or_unsigned(dtype) or dtypes.is_int(dtype) else builder.fmul(x, y, flags=MFLAGS),  # noqa: E501
+    BinaryOps.IDIV: lambda builder, x, y, dtype: builder.udiv(x, y) if is_bool_or_unsigned(dtype) else builder.sdiv(x, y),
+    BinaryOps.CMPLT: lambda builder, x, y, dtype: builder.icmp_unsigned("<", x, y) if is_bool_or_unsigned(dtype) else builder.icmp_signed("<", x, y) if dtypes.is_int(dtype) else builder.fcmp_unordered("<", x, y, flags=MFLAGS),  # noqa: E501
+    BinaryOps.CMPNE: lambda builder, x, y, dtype: builder.icmp_unsigned("!=", x, y) if is_bool_or_unsigned(dtype) else builder.icmp_signed("!=", x, y) if dtypes.is_int(dtype) else builder.fcmp_unordered("!=", x, y, flags=MFLAGS),  # noqa: E501
+    BinaryOps.MAX: lambda builder, x, y, dtype: builder.select(builder.icmp_unsigned(">", x, y) if is_bool_or_unsigned(dtype) else builder.icmp_signed(">", x, y) if dtypes.is_int(dtype) else builder.fcmp_unordered(">", x, y, flags=MFLAGS), x, y),  # noqa: E501
+    BinaryOps.MOD: lambda builder, x, y, dtype: builder.urem(x, y) if is_bool_or_unsigned(dtype) else builder.srem(x, y) if dtypes.is_int(dtype) else builder.frem(x, y),  # noqa: E501
+    BinaryOps.XOR: lambda builder, x, y, dtype: builder.xor(x, y), BinaryOps.AND: lambda builder, x, y, dtype: builder.and_(x, y), BinaryOps.OR: lambda builder, x, y, dtype: builder.or_(x, y), # noqa: E501
+    TernaryOps.WHERE: lambda builder, x, y, z, dtype: builder.select(x, y, z)}
 
-  # create llvm function
-  func_dtypes = [(dtype_to_llvm_dtype[dtype],dtype) for dtype in buf_to_dtype.values()]
-  func = ir.Function(module, ir.FunctionType(ir.VoidType(), [x.as_pointer() if dt!=dtypes._arg_int32 else x for x,dt in func_dtypes]), name=function_name)
-  for a in func.args:
-    if a.type.is_pointer: a.add_attribute("noalias")
+  def render(self, name:str, uops:List[UOp]) -> str:
+    # all llvm stuff goes into a module
+    module = ir.Module(name=__file__)
 
-  # add the function attribute "no-nans-fp-math"="true", which informs llvm that it allowed to use vectorization optimizations
-  func.attributes._known = func.attributes._known.union(frozenset(['"no-nans-fp-math"="true"']))
-  func.attributes.add('"no-nans-fp-math"="true"')
+    # extract global buffers (NOTE: this isn't right if DEFINE_GLOBAL is out of order)
+    buf_to_dtype = {u.arg:u.dtype for u in uops if u.op in {UOps.DEFINE_GLOBAL, UOps.DEFINE_VAR}}
+    buf_index = {x:i for i,x in enumerate(buf_to_dtype.keys())}
 
-  bb = [ir.IRBuilder(func.append_basic_block("entry"))]
-  loop_blocks: List = []
-  reduce_phis: List = []
-  # TODO: newvar probably shouldn't be optional
-  lvars: Dict[Optional[UOp], Any] = {}  # this Any is an llvm type
+    # create llvm function
+    func_dtypes = [(dtype_to_llvm_dtype[dtype],dtype) for dtype in buf_to_dtype.values()]
+    func = ir.Function(module, ir.FunctionType(ir.VoidType(), [x.as_pointer() if isinstance(dt, PtrDType) else x for x,dt in func_dtypes]), name=name)
+    for a in func.args:
+      if a.type.is_pointer: a.add_attribute("noalias")
 
-  for bufname,dtype in buf_to_dtype.items():
-    if dtype == dtypes._arg_int32: lvars[bufname] = bb[-1].sext(func.args[buf_index[bufname]], ir.IntType(32))
+    bb = [ir.IRBuilder(func.append_basic_block("entry"))]
+    loop_blocks: List = []
+    reduce_phis: List = []
+    # TODO: newvar probably shouldn't be optional
+    lvars: Dict[Optional[UOp], Any] = {}  # this Any is an llvm type
 
-  for u in uops:
-    uop,dtype,vin,args,_ = u
-    if uop == UOps.LOOP:
-      bb.append(ir.IRBuilder(func.append_basic_block(f"loop_body_{len(loop_blocks)}")))
-      bb[-2].branch(bb[-1]._block)
+    for bufname,dtype in buf_to_dtype.items():
+      if not isinstance(dtype, PtrDType) and dtype == dtypes.int32: lvars[bufname] = bb[-1].sext(func.args[buf_index[bufname]], ir.IntType(32))
 
-      phis = []
-      for rp in reduce_phis:
-        incoming = lvars[rp]
-        lvars[rp] = bb[-1].phi(ir.FloatType())
-        lvars[rp].add_incoming(incoming, bb[-2]._block)
-        phis.append((rp, lvars[rp]))
-
-      lvars[u] = bb[-1].phi(ir.IntType(32), name=f"loop{len(loop_blocks)}")
-      lvars[u].add_incoming(lvars[vin[0]], bb[-2]._block)
-      loop_blocks.append((bb[-1], phis))
-    if uop == UOps.END:
-      block, phis = loop_blocks.pop()
-      idx_p1 = bb[-1].add(lvars[vin[0]], ir.Constant(ir.IntType(32), 1))
-      lvars[vin[0]].add_incoming(idx_p1, bb[-1]._block)
-      for n,phi in phis: phi.add_incoming(lvars[n], bb[-1]._block)
-      bb.append(ir.IRBuilder(func.append_basic_block(f"loop_exit_{len(loop_blocks)}")))
-      bb[-2].cbranch(bb[-2].icmp_unsigned("<", idx_p1, lvars[vin[0].vin[1]]), block._block, bb[-1]._block)
-    if uop == UOps.DEFINE_GLOBAL:
-      lvars[u] = func.args[buf_index[args[0]]]
-    if uop == UOps.DEFINE_ACC:
-      lvars[u] = ir.Constant(dtype_to_llvm_dtype[dtype], args)
-      reduce_phis.append(u)
-    if uop == UOps.SPECIAL:
-      lvars[u] = lvars[args.expr]
-    if uop == UOps.CONST:
-      value = int(args) if dtypes.is_int(dtype) else bool(args) if dtype == dtypes.bool else args
-      lvars[u] = ir.Constant(dtype_to_llvm_dtype[dtype], value)
-    if uop == UOps.LOAD:
-      assert dtype is not None
-      if len(vin) > 2:
-        gate = bb[-1].trunc(lvars[vin[2]], ir.IntType(1))
-        aug_idx = bb[-1].select(gate, lvars[vin[1]], ir.Constant(ir.IntType(32), 0))
-        val = bb[-1].load(bb[-1].gep(lvars[vin[0]], [aug_idx], inbounds=True))
-        val = cast(bb, val, vin[0].dtype, dtype)
-        val = bb[-1].select(gate, val, lvars[vin[3]])
+    for u in uops:
+      uop,dtype,src,args = u.op,u.dtype,u.src,u.arg
+      if uop is UOps.STORE:
+        element = cast(bb, lvars[src[2]], src[2].dtype, src[0].dtype)
+        if len(src) > 3:
+          with bb[-1].if_then(lvars[src[3]]):
+            bb[-1].store(element, bb[-1].gep(lvars[src[0]], [lvars[src[1]]], inbounds=True))
+        else:
+          bb[-1].store(element, bb[-1].gep(lvars[src[0]], [lvars[src[1]]], inbounds=True))
+      elif uop is UOps.ENDRANGE:
+        loop_entry_bb, phis = loop_blocks.pop()
+        idx_p1 = bb[-1].add(lvars[src[0]], ir.Constant(ir.IntType(32), 1))
+        lvars[src[0]].add_incoming(idx_p1, bb[-1].block)
+        for n,phi in phis: phi.add_incoming(lvars[n], bb[-1].block)
+        bb.append(ir.IRBuilder(func.append_basic_block(f"loop_exit_{len(loop_blocks)}")))
+        bb[-2].cbranch(bb[-2].icmp_unsigned("<", idx_p1, lvars[src[0].src[1]]), loop_entry_bb, bb[-1].block)
       else:
-        val = bb[-1].load(bb[-1].gep(lvars[vin[0]], [lvars[vin[1]]], inbounds=True))
-        val = cast(bb, val, vin[0].dtype, dtype)
-      lvars[u] = val
-    if uop == UOps.PHI:
-      lvars[u] = lvars[vin[1]]
-      # PHI UOps can link to other PHI Uops, backtrace this to DEFINE_ACC
-      backward = vin[0]
-      while backward.uop == UOps.PHI: backward = backward.vin[0]
-      lvars[backward] = lvars[u]
-    if uop == UOps.STORE:
-      element = cast(bb, lvars[vin[2]], vin[2].dtype, vin[0].dtype)
-      bb[-1].store(element, bb[-1].gep(lvars[vin[0]], [lvars[vin[1]]], inbounds=True))
-    if uop == UOps.ALU:
-      lvars[u] = code_for_op[args](bb[-1], *[lvars[x] for x in vin])
+        if uop is UOps.RANGE:
+          bb.append(ir.IRBuilder(func.append_basic_block(f"loop_body_{len(loop_blocks)}")))
+          bb[-2].branch(bb[-1].block)
 
-  bb[-1].ret_void()
-  return str(module), {}
+          phis = []
+          for rp in reduce_phis:
+            incoming = lvars[rp]
+            lvars[rp] = bb[-1].phi(dtype_to_llvm_dtype[rp.dtype])
+            lvars[rp].add_incoming(incoming, bb[-2].block)
+            phis.append((rp, lvars[rp]))
+
+          lvars[u] = bb[-1].phi(ir.IntType(32), name=f"loop{len(loop_blocks)}")
+          lvars[u].add_incoming(lvars[src[0]], bb[-2].block)
+          loop_blocks.append((bb[-1].block, phis))
+        elif uop is UOps.DEFINE_ACC:
+          lvars[u] = const(src[0].arg, dtype)
+          reduce_phis.append(u)
+        elif uop is UOps.LOAD:
+          if len(src) > 2:
+            aug_idx = bb[-1].select(lvars[src[3]], lvars[src[1]], ir.Constant(ir.IntType(32), 0))
+            val = bb[-1].load(bb[-1].gep(lvars[src[0]], [aug_idx], inbounds=True))
+            val = bb[-1].select(lvars[src[3]], val, lvars[src[2]])
+          else:
+            val = bb[-1].load(bb[-1].gep(lvars[src[0]], [lvars[src[1]]], inbounds=True))
+          lvars[u] = val
+        elif uop is UOps.ASSIGN:
+          lvars[u] = lvars[src[1]]
+          # ASSIGN UOps can link to other ASSIGN Uops, backtrace this to DEFINE_ACC
+          backward = src[0]
+          while backward.op is UOps.ASSIGN: backward = backward.src[0]
+          lvars[backward] = lvars[u]
+        elif uop is UOps.ALU:
+          lvars[u] = self.code_for_op[args](bb[-1], *[lvars[x] for x in src], src[0].dtype if args in {BinaryOps.CMPLT, BinaryOps.CMPNE} else dtype)
+        elif uop in {UOps.CAST, UOps.BITCAST}: lvars[u] = cast(bb, lvars[src[0]], src[0].dtype, dtype, bitcast=uop is UOps.BITCAST)
+        elif uop in {UOps.DEFINE_GLOBAL, UOps.DEFINE_VAR}: lvars[u] = func.args[buf_index[args]]
+        elif uop is UOps.CONST: lvars[u] = const(args, dtype)
+        else: raise RuntimeError(f"failed to render {uop}")
+
+    bb[-1].ret_void()
+    return str(module)
