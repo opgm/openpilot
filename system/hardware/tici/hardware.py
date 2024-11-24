@@ -123,12 +123,6 @@ class Tici(HardwareBase):
   def get_device_type(self):
     return get_device_type()
 
-  def get_sound_card_online(self):
-    if os.path.isfile('/proc/asound/card0/state'):
-      with open('/proc/asound/card0/state') as f:
-        return f.read().strip() == 'ONLINE'
-    return False
-
   def reboot(self, reason=None):
     subprocess.check_output(["sudo", "reboot"])
 
@@ -300,19 +294,6 @@ class Tici(HardwareBase):
     except Exception:
       return None
 
-  def get_modem_nv(self):
-    timeout = 0.2  # Default timeout is too short
-    files = (
-      '/nv/item_files/modem/mmode/ue_usage_setting',
-      '/nv/item_files/ims/IMS_enable',
-      '/nv/item_files/modem/mmode/sms_only',
-    )
-    try:
-      modem = self.get_modem()
-      return { fn: str(modem.Command(f'AT+QNVFR="{fn}"', math.ceil(timeout), dbus_interface=MM_MODEM, timeout=timeout)) for fn in files}
-    except Exception:
-      return None
-
   def get_modem_temperatures(self):
     timeout = 0.2  # Default timeout is too short
     try:
@@ -431,8 +412,8 @@ class Tici(HardwareBase):
 
     # *** GPU config ***
     # https://github.com/commaai/agnos-kernel-sdm845/blob/master/arch/arm64/boot/dts/qcom/sdm845-gpu.dtsi#L216
-    sudo_write("1", "/sys/class/kgsl/kgsl-3d0/min_pwrlevel")
-    sudo_write("1", "/sys/class/kgsl/kgsl-3d0/max_pwrlevel")
+    sudo_write("0", "/sys/class/kgsl/kgsl-3d0/min_pwrlevel")
+    sudo_write("0", "/sys/class/kgsl/kgsl-3d0/max_pwrlevel")
     sudo_write("1", "/sys/class/kgsl/kgsl-3d0/force_bus_on")
     sudo_write("1", "/sys/class/kgsl/kgsl-3d0/force_clk_on")
     sudo_write("1", "/sys/class/kgsl/kgsl-3d0/force_rail_on")
@@ -473,14 +454,15 @@ class Tici(HardwareBase):
     cmds = []
     if manufacturer == 'Cavli Inc.':
       cmds += [
-        # use sim slot
-        'AT^SIMSWAP=1',
+        'AT^SIMSWAP=1',     # use SIM slot, instead of internal eSIM
+        'AT$QCSIMSLEEP=0',  # disable SIM sleep
+        'AT$QCSIMCFG=SimPowerSave,0',  # more sleep disable
 
         # ethernet config
         'AT$QCPCFG=usbNet,0',
         'AT$QCNETDEVCTL=3,1',
       ]
-    else:
+    elif self.get_device_type() in ("tici", "tizi"):
       cmds += [
         # configure modem as data-centric
         'AT+QNVW=5280,0,"0102000000000000"',
@@ -563,8 +545,10 @@ class Tici(HardwareBase):
 
   def reset_internal_panda(self):
     gpio_init(GPIO.STM_RST_N, True)
+    gpio_init(GPIO.STM_BOOT0, True)
 
     gpio_set(GPIO.STM_RST_N, 1)
+    gpio_set(GPIO.STM_BOOT0, 0)
     time.sleep(1)
     gpio_set(GPIO.STM_RST_N, 0)
 
