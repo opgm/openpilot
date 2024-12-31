@@ -1,107 +1,117 @@
-<div align="center" style="text-align: center;">
+# OPGM openpilot fork
+> Latest build info
+> - date: December 30, 2024
+> - upstream commit: [`8f7bbe4ee3`](https://github.com/commaai/openpilot/tree/8f7bbe4ee3d0671d9a31145150c1de648b5055e4)
 
-<h1>openpilot</h1>
+OPGM is a fork of [openpilot](https://github.com/commaai/openpilot/), an open source driver assistance system. Please consult the official documentation for most questions.
 
-<p>
-  <b>openpilot is an operating system for robotics.</b>
-  <br>
-  Currently, it upgrades the driver assistance system in 275+ supported cars.
-</p>
+## How to use:
+1. Ensure your vehicle is on the supported vehicle list (see below).
+2. Install a Comma 3 or Comma 3X and wiring harness
+   - (Optional) If you have an EV, a [Comma pedal](https://shop.tlbb.ca/) is highly recommended.
+3. Type `opgm.cc` in the software installation screen
+4. (Optional) Turn on openpilot longitudinal control in the settings for "[redneck ACC](https://www.youtube.com/watch?v=41wZ1EAmf94)"
 
-<h3>
-  <a href="https://docs.comma.ai">Docs</a>
-  <span> · </span>
-  <a href="https://docs.comma.ai/contributing/roadmap/">Roadmap</a>
-  <span> · </span>
-  <a href="https://github.com/commaai/openpilot/blob/master/docs/CONTRIBUTING.md">Contribute</a>
-  <span> · </span>
-  <a href="https://discord.comma.ai">Community</a>
-  <span> · </span>
-  <a href="https://comma.ai/shop">Try it on a comma 3X</a>
-</h3>
+## Supported vehicles list
+If your car works on stock openpilot, you should not use OPGM. The software will likely work without issue, but support from OPGM is not guaranteed since you have official support upstream.
 
-Quick start: `bash <(curl -fsSL openpilot.comma.ai)`
+### Non-ACC GM cars
+These cars **must** come with factory LKAS or there is no guarantee that openpilot will work!
+* 2016-2019 Chevrolet Volt
+* 2017-2019 Chevrolet Bolt EV
+* 2020-2023 Chevrolet Bolt EV/EUV
+* Chevrolet Equinox/GMC Terrain
+* Chevrolet Tahoe/GMC Yukon
+* Chevrolet Suburban
+* Chevrolet Trailblazer
+* Chevrolet Malibu
+* Cadillac XT5
+* Cadillac CT6
+#### Required hardware
+Buy the GM harness bundle with your C3X.
 
-![openpilot tests](https://github.com/commaai/openpilot/actions/workflows/selfdrive_tests.yaml/badge.svg)
-[![codecov](https://codecov.io/gh/commaai/openpilot/branch/master/graph/badge.svg)](https://codecov.io/gh/commaai/openpilot)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![X Follow](https://img.shields.io/twitter/follow/comma_ai)](https://x.com/comma_ai)
-[![Discord](https://img.shields.io/discord/469524606043160576)](https://discord.comma.ai)
+If you want to use a Comma Pedal, you will need the following instead:
+- C3X
+- GM harness **wires only**
+- [old style harness box](https://oneclone.net/product/fresh-orange-juice/)
 
-</div>
-
-<table>
-  <tr>
-    <td><a href="https://youtu.be/NmBfgOanCyk" title="Video By Greer Viau"><img src="https://github.com/commaai/openpilot/assets/8762862/2f7112ae-f748-4f39-b617-fabd689c3772"></a></td>
-    <td><a href="https://youtu.be/VHKyqZ7t8Gw" title="Video By Logan LeGrand"><img src="https://github.com/commaai/openpilot/assets/8762862/92351544-2833-40d7-9e0b-7ef7ae37ec4c"></a></td>
-    <td><a href="https://youtu.be/SUIZYzxtMQs" title="A drive to Taco Bell"><img src="https://github.com/commaai/openpilot/assets/8762862/05ceefc5-2628-439c-a9b2-89ce77dc6f63"></a></td>
-  </tr>
-</table>
+### SDGM cars
+These cars have a Serial Data Gateway Module and require a special wiring harness.
+* 2019 Chevrolet Volt
+* Cadillac XT4
+* Chevrolet Traverse
+* Buick Baby Enclave
+#### Required hardware
+TODO
 
 
-Using openpilot in a car
-------
+> At this time, the Global B (VIP) architecture is unsupported due to CAN bus encryption. If you have a vehicle on one of these architectures and consider yourself to be a hacker/tinkerer type, we would love to hear from you!
 
-To use openpilot in a car, you need four things:
-1. **Supported Device:** a comma 3/3X, available at [comma.ai/shop](https://comma.ai/shop/comma-3x).
-2. **Software:** The setup procedure for the comma 3/3X allows users to enter a URL for custom software. Use the URL `openpilot.comma.ai` to install the release version.
-3. **Supported Car:** Ensure that you have one of [the 275+ supported cars](docs/CARS.md).
-4. **Car Harness:** You will also need a [car harness](https://comma.ai/shop/car-harness) to connect your comma 3/3X to your car.
+### Fingerprinting your vehicle
+Note! You likely do not have to do this. Try installing OPGM first, and only proceed with the fingerprinting process if
+it does not work out of the box.
 
-We have detailed instructions for [how to install the harness and device in a car](https://comma.ai/setup). Note that it's possible to run openpilot on [other hardware](https://blog.comma.ai/self-driving-car-for-free/), although it's not plug-and-play.
+You will first need to set up [SSH access](https://github.com/commaai/openpilot/wiki/SSH) to your device. Then, follow
+the fingerprinting instructions posted [here](https://github.com/commaai/openpilot/wiki/Fingerprinting#fingerprinting-10).
 
-### Branches
-| branch           | URL                                    | description                                                                         |
-|------------------|----------------------------------------|-------------------------------------------------------------------------------------|
-| `release3`         | openpilot.comma.ai                      | This is openpilot's release branch.                                                 |
-| `release3-staging` | openpilot-test.comma.ai                | This is the staging branch for releases. Use it to get new releases slightly early. |
-| `nightly`          | openpilot-nightly.comma.ai             | This is the bleeding edge development branch. Do not expect this to be stable.      |
-| `nightly-dev`      | installer.comma.ai/commaai/nightly-dev | Same as nightly, but includes experimental development features for some cars.      |
+> You must follow the **v1.0** instructions. Fingerprint v2.0 is not yet supported for GM vehicles.
 
-To start developing openpilot
-------
+Reach out in the [OPGM discord channel](#discussion) with questions, or after you have fingerprinted your vehicle so it
+can be added to OPGM.
 
-openpilot is developed by [comma](https://comma.ai/) and by users like you. We welcome both pull requests and issues on [GitHub](http://github.com/commaai/openpilot).
+## Installation
+### Hardware
+OPGM supports the Comma Three development platform; legacy support for Comma Two is not guaranteed. Some older development
+branches may work on Comma Two. Use at your own risk.
 
-* Join the [community Discord](https://discord.comma.ai)
-* Check out [the contributing docs](docs/CONTRIBUTING.md)
-* Check out the [openpilot tools](tools/)
-* Read about the [development workflow](docs/WORKFLOW.md)
-* Code documentation lives at https://docs.comma.ai
-* Information about running openpilot lives on the [community wiki](https://github.com/commaai/openpilot/wiki)
+Verify first that your vehicle has LKAS. Verify as well that it has a forward-facing camera; you can do this by removing
+the plastic cover on the windshield behind the rearview mirror. If you see a silver rectangular camera, you're good to go.
 
-Want to get paid to work on openpilot? [comma is hiring](https://comma.ai/jobs#open-positions) and offers lots of [bounties](https://comma.ai/bounties) for external contributors.
+If you have vehicle supported by upstream openpilot, buy the corresponding hardware from Comma.
 
-Safety and Testing
-----
+If you have a vehicle without ACC, buy the [Bolt EV/EUV kit from Comma](https://comma.ai/shop/comma-three). If you have
+a Bolt EV/EUV, it is **strongly** recommended to purchase a pedal interceptor for the best experience. (You may always
+add one later, if you want to try OPGM before committing.)
 
-* openpilot observes [ISO26262](https://en.wikipedia.org/wiki/ISO_26262) guidelines, see [SAFETY.md](docs/SAFETY.md) for more details.
-* openpilot has software-in-the-loop [tests](.github/workflows/selfdrive_tests.yaml) that run on every commit.
-* The code enforcing the safety model lives in panda and is written in C, see [code rigor](https://github.com/commaai/panda#code-rigor) for more details.
-* panda has software-in-the-loop [safety tests](https://github.com/commaai/panda/tree/master/tests/safety).
-* Internally, we have a hardware-in-the-loop Jenkins test suite that builds and unit tests the various processes.
-* panda has additional hardware-in-the-loop [tests](https://github.com/commaai/panda/blob/master/Jenkinsfile).
-* We run the latest openpilot in a testing closet containing 10 comma devices continuously replaying routes.
+You may buy a pedal interceptor from the following vendors:
+* [TinyBear](https://www.etsy.com/listing/952895642/openpilot-comma-pedal-non-customizable?variation0=3013902165)
 
-Licensing
-------
+### Software
+For the latest stable build, use the install URL: `opgm.cc`
 
-openpilot is released under the MIT license. Some parts of the software are released under other licenses as specified.
+> #### Installation troubleshooting
+> If the installation fails partway through, try moving your device closer to your WiFi router.
+>   * You may plug the Comma Three into a USB power source delivering at least 2A of current.
 
-Any user of this software shall indemnify and hold harmless Comma.ai, Inc. and its directors, officers, employees, agents, stockholders, affiliates, subcontractors and customers from and against all allegations, claims, actions, suits, demands, damages, liabilities, obligations, losses, settlements, judgments, costs and expenses (including without limitation attorneys’ fees and costs) which arise out of, relate to or result from any use of this software by user.
+Ensure that your car is *completely* powered off during software installation, otherwise you may get a "no panda" error.
+To be sure that your car is completely powered down:
+1. Turn the car on and off
+2. Open and close the driver's door
+3. Wait 5 minutes
 
-**THIS IS ALPHA QUALITY SOFTWARE FOR RESEARCH PURPOSES ONLY. THIS IS NOT A PRODUCT.
-YOU ARE RESPONSIBLE FOR COMPLYING WITH LOCAL LAWS AND REGULATIONS.
-NO WARRANTY EXPRESSED OR IMPLIED.**
+## Known issues
+* Curve hugging and laneline crossing are known issues of upstream openpilot.
+* Officially supported cars (e.g. ACC Volt and Bolt) may have issues fingerprinting on OPGM. Currently, the only workaround is to hardcode your fingerprint in the `/data/openpilot/launch_env.sh` file.
 
-User Data and comma Account
-------
+## Discussion
+Come join us on the OPGM channel in the [openpilot community discord](https://discord.gg/KGWEdwSnCU)!
 
-By default, openpilot uploads the driving data to our servers. You can also access your data through [comma connect](https://connect.comma.ai/). We use your data to train better models and improve openpilot for everyone.
+## Contributing
+Contributions are welcome, but please note the following:
+1. All pull requests should be opened against the `dev` branch.
+2. OPGM does not accept requests to support cars that meet Comma's minimum supportability requirements. Work on supporting such cars should be done upstream on stock openpilot.
+3. OPGM generally does not accept features outside the very narrow scope of "minimum functionality". Such features should be proposed upstream or included in other community forks.
 
-openpilot is open source software: the user is free to disable data collection if they wish to do so.
+## Credits
+### Current contributors
+* [comma.ai](https://comma.ai) for openpilot
+* nworby (BDFL)
+* mochi86420
 
-openpilot logs the road-facing cameras, CAN, GPS, IMU, magnetometer, thermal sensors, crashes, and operating system logs.
-The driver-facing camera is only logged if you explicitly opt-in in settings. The microphone is not recorded.
+### Past contributors
+* jshuler (father of OPGM)
+* twilsonco
+* Many others
 
-By using openpilot, you agree to [our Privacy Policy](https://comma.ai/privacy). You understand that use of this software or its related services will generate certain types of user data, which may be logged and stored at the sole discretion of comma. By accepting this agreement, you grant an irrevocable, perpetual, worldwide right to comma for the use of this data.
+# License
+OPGM is under the MIT license. See [LICENSE](LICENSE) for more information.
