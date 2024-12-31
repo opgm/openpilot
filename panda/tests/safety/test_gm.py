@@ -235,7 +235,7 @@ def interceptor_msg(gas, addr):
 
 
 class TestGmInterceptorSafety(common.GasInterceptorSafetyTest, TestGmCameraSafety):
-  INTERCEPTOR_THRESHOLD = 515
+  INTERCEPTOR_THRESHOLD = 550
 
   def setUp(self):
     self.packer = CANPackerPanda("gm_global_a_powertrain_generated")
