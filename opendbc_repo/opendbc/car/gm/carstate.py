@@ -97,7 +97,7 @@ class CarState(CarStateBase):
 
     if self.CP.enableGasInterceptorDEPRECATED:
       ret.gas = (pt_cp.vl["GAS_SENSOR"]["INTERCEPTOR_GAS"] + pt_cp.vl["GAS_SENSOR"]["INTERCEPTOR_GAS2"]) / 2.
-      threshold = 15 if self.CP.carFingerprint in CAMERA_ACC_CAR else 4
+      threshold = 20 if self.CP.carFingerprint in CAMERA_ACC_CAR else 4
       ret.gasPressed = ret.gas > threshold
     else:
       ret.gas = pt_cp.vl["AcceleratorPedal2"]["AcceleratorPedal2"] / 254.
