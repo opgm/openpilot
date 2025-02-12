@@ -2,6 +2,7 @@ from collections import deque
 from cereal import car, log
 import cereal.messaging as messaging
 from opendbc.car import DT_CTRL, structs
+from opendbc.car.gm.values import GMFlags
 from opendbc.car.interfaces import MAX_CTRL_SPEED
 from opendbc.car.volkswagen.values import CarControllerParams as VWCarControllerParams
 from opendbc.car.hyundai.interface import ENABLE_BUTTONS as HYUNDAI_ENABLE_BUTTONS
@@ -112,6 +113,9 @@ class CarSpecificEvents:
         events.add(EventName.resumeRequired)
       if CS.vEgo < self.CP.minSteerSpeed:
         events.add(EventName.belowSteerSpeed)
+
+      if (self.CP.flags & GMFlags.CC_LONG) and CS.out.vEgo < self.CP.minEnableSpeed and CS.out.cruiseState.enabled:
+        events.add(EventName.speedTooLow)
 
     elif self.CP.brand == 'volkswagen':
       events = self.create_common_events(CS, CS_prev, extra_gears=[GearShifter.eco, GearShifter.sport, GearShifter.manumatic],
