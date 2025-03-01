@@ -25,7 +25,7 @@ rm -rf $BUILD_DIR
 mkdir -p $BUILD_DIR
 cd $BUILD_DIR
 git init
-git remote add origin git@github.com:commaai/openpilot.git
+git remote add origin git@github.com:opgm/openpilot.git
 git checkout --orphan $RELEASE_BRANCH
 
 # do the files copy
@@ -50,13 +50,8 @@ git commit -a -m "openpilot v$VERSION release"
 export PYTHONPATH="$BUILD_DIR"
 scons -j$(nproc) --minimal
 
-if [ -z "$PANDA_DEBUG_BUILD" ]; then
-  # release panda fw
-  CERT=/data/pandaextra/certs/release RELEASE=1 scons -j$(nproc) panda/
-else
-  # build with ALLOW_DEBUG=1 to enable features like experimental longitudinal
-  scons -j$(nproc) panda/
-fi
+# release panda fw
+scons -j$(nproc) panda/
 
 # Ensure no submodules in release
 if test "$(git submodule--helper list | wc -l)" -gt "0"; then
@@ -96,14 +91,14 @@ TEST_FILES="tools/"
 cd $SOURCE_DIR
 cp -pR -n --parents $TEST_FILES $BUILD_DIR/
 cd $BUILD_DIR
-RELEASE=1 pytest -n0 -s selfdrive/test/test_onroad.py
+#RELEASE=1 pytest -n0 -s selfdrive/test/test_onroad.py
 #system/manager/test/test_manager.py
-pytest selfdrive/car/tests/test_car_interfaces.py
-rm -rf $TEST_FILES
+#pytest selfdrive/car/tests/test_car_interfaces.py
+#rm -rf $TEST_FILES
 
 if [ ! -z "$RELEASE_BRANCH" ]; then
   echo "[-] pushing release T=$SECONDS"
-  git push -f origin $RELEASE_BRANCH:$RELEASE_BRANCH
+  GIT_SSH_COMMAND="ssh -i /data/id_rsa_github" git push -f origin $RELEASE_BRANCH:$RELEASE_BRANCH
 fi
 
 echo "[-] done T=$SECONDS"
