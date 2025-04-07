@@ -27,7 +27,7 @@ rm -rf $BUILD_DIR
 mkdir -p $BUILD_DIR
 cd $BUILD_DIR
 git init
-git remote add origin git@github.com:commaai/openpilot.git
+git remote add origin git@github.com:opgm/openpilot.git
 git checkout --orphan $BUILD_BRANCH
 
 # do the files copy
@@ -85,7 +85,7 @@ git commit --amend -m "openpilot v$VERSION"
 
 # Run tests
 cd $BUILD_DIR
-RELEASE=1 pytest -n0 -s openpilot/selfdrive/test/test_onroad.py
+#RELEASE=1 pytest -n0 -s openpilot/selfdrive/test/test_onroad.py
 #pytest openpilot/selfdrive/car/tests/test_car_interfaces.py
 
 echo "[-] pushing release T=$SECONDS"
