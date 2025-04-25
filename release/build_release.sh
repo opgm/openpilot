@@ -94,9 +94,9 @@ cd $BUILD_DIR
 #RELEASE=1 pytest -n0 -s selfdrive/test/test_onroad.py
 #pytest selfdrive/car/tests/test_car_interfaces.py
 
-if [ ! -z "$RELEASE_BRANCH" ]; then
-  echo "[-] pushing release T=$SECONDS"
-  git push -f origin $RELEASE_BRANCH:$RELEASE_BRANCH
-fi
+#if [ ! -z "$RELEASE_BRANCH" ]; then
+#  echo "[-] pushing release T=$SECONDS"
+#  git push -f origin $RELEASE_BRANCH:$RELEASE_BRANCH
+#fi
 
 echo "[-] done T=$SECONDS"
