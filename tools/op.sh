@@ -127,7 +127,7 @@ function op_check_os() {
     if [ -f "/etc/os-release" ]; then
       source /etc/os-release
       case "$VERSION_CODENAME" in
-        "jammy" | "kinetic" | "noble" | "focal")
+        "jammy" | "kinetic" | "noble" | "focal" | "trixie")
           echo -e " ↳ [${GREEN}✔${NC}] Ubuntu $VERSION_CODENAME detected."
           ;;
         * )
