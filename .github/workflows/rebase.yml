@@ -1,0 +1,48 @@
+name: Daily Rebase
+
+on:
+  schedule:
+    - cron: '5 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  bump-submodule:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository (with submodules)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+          token: ${{ secrets.PAT_PUSH_TOKEN }}
+
+      - name: Set up Git user
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Add remote and fetch latest changes
+        run: |
+          git remote add upstream https://github.com/commaai/openpilot.git
+          git fetch upstream master
+
+      - name: Rebase openpilot
+        run: |
+          git checkout $(git rev-parse --abbrev-ref HEAD)
+          git submodule update --init
+          git rebase --onto upstream/master "$(git merge-base HEAD upstream/master)" HEAD~1
+          git checkout -B master
+
+      - name: Update opendbc
+        run: |
+          pushd opendbc_repo
+          git remote add opgm https://github.com/opgm/opendbc.git
+          git fetch opgm master
+          git checkout opgm/master
+          popd
+          git add opendbc_repo
+          git diff --staged --quiet || git commit -m "Bump opendbc"
+
+      - name: Push changes
+        run: |
+          git push --force-with-lease --no-verify origin $(git rev-parse --abbrev-ref HEAD)
