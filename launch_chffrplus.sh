@@ -19,7 +19,14 @@ function agnos_init {
   # Check if AGNOS update is required
   if [ $(< /VERSION) != "$AGNOS_VERSION" ]; then
     AGNOS_PY="$DIR/system/hardware/tici/agnos.py"
-    MANIFEST="$DIR/system/hardware/tici/agnos.json"
+
+    RAW_MODEL=$(tr -d '\0' < /sys/firmware/devicetree/base/model 2>/dev/null || true)
+    if echo "$RAW_MODEL" | grep -qi "tici"; then
+      MANIFEST="$DIR/system/hardware/tici/agnos_tici.json"
+    else
+      MANIFEST="$DIR/system/hardware/tici/agnos.json"
+    fi
+
     if $AGNOS_PY --verify $MANIFEST; then
       sudo reboot
     fi
