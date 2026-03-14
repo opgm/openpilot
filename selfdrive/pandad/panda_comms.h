@@ -10,6 +10,34 @@
 #define TIMEOUT 0
 #define SPI_BUF_SIZE 2048
 
+struct libusb_context;
+struct libusb_device_handle;
+
+class PandaUsbHandle {
+public:
+  std::string hw_serial;
+  std::atomic<bool> connected = true;
+  std::atomic<bool> comms_healthy = true;
+
+  PandaUsbHandle(std::string serial);
+  ~PandaUsbHandle();
+
+  int control_write(uint8_t request, uint16_t param1, uint16_t param2, unsigned int timeout=TIMEOUT);
+  int control_read(uint8_t request, uint16_t param1, uint16_t param2, unsigned char *data, uint16_t length, unsigned int timeout=TIMEOUT);
+  int bulk_write(unsigned char endpoint, unsigned char* data, int length, unsigned int timeout=TIMEOUT);
+  int bulk_read(unsigned char endpoint, unsigned char* data, int length, unsigned int timeout=TIMEOUT);
+
+  static std::vector<std::string> list();
+
+private:
+  libusb_context *ctx = NULL;
+  libusb_device_handle *dev_handle = NULL;
+  std::recursive_mutex hw_lock;
+
+  void cleanup();
+  void handle_usb_issue(int err, const char func[]);
+};
+
 
 class PandaSpiHandle {
 public:

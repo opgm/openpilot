@@ -13,9 +13,9 @@ from openpilot.system.hardware import HARDWARE
 from openpilot.common.swaglog import cloudlog
 
 
-def get_expected_signature() -> bytes:
+def get_expected_signature(panda: Panda) -> bytes:
   try:
-    fn = os.path.join(FW_PATH, McuType.H7.config.app_fn)
+    fn = os.path.join(FW_PATH, panda.get_mcu_type().config.app_fn)
     return Panda.get_signature_from_firmware(fn)
   except Exception:
     cloudlog.exception("Error computing expected signature")
@@ -29,7 +29,7 @@ def flash_panda(panda_serial: str) -> Panda:
     HARDWARE.recover_internal_panda()
     raise
 
-  fw_signature = get_expected_signature()
+  fw_signature = get_expected_signature(panda)
   internal_panda = panda.is_internal()
 
   panda_version = "bootstub" if panda.bootstub else panda.get_version()
