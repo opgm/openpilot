@@ -17,6 +17,7 @@
 #include "system/camerad/cameras/ife.h"
 #include "system/camerad/cameras/nv12_info.h"
 #include "system/camerad/cameras/spectra.h"
+#include "system/camerad/cameras/ar0231_bps_blobs.h"
 #include "system/camerad/cameras/bps_blobs.h"
 
 
@@ -1046,13 +1047,17 @@ bool SpectraCamera::openSensor() {
   };
 
   // Figure out which sensor we have
-  if (!init_sensor_lambda(new OS04C10) &&
-      !init_sensor_lambda(new OX03C10)) {
+  if (!init_sensor_lambda(new AR0231) &&
+      !init_sensor_lambda(new OX03C10) &&
+      !init_sensor_lambda(new OS04C10)) {
     LOGE("** sensor %d FAILED bringup, disabling", cc.camera_num);
     enabled = false;
     return false;
   }
   LOGD("-- Probing sensor %d success", cc.camera_num);
+  if (sensor->image_sensor == cereal::FrameData::ImageSensor::AR0231) {
+    cc.staggered_sof = false;
+  }
 
   // create session
   struct cam_req_mgr_session_info session_info = {};
@@ -1166,12 +1171,13 @@ void SpectraCamera::configICP() {
   */
 
   int cfg_handle;
+  const bool is_ar0231 = sensor->image_sensor == cereal::FrameData::ImageSensor::AR0231;
 
   uint32_t cfg_size = sizeof(bps_cfg[0]) / sizeof(bps_cfg[0][0]);
   void *cfg = alloc_w_mmu_hdl(m->video0_fd, cfg_size, (uint32_t*)&cfg_handle, 0x1,
                               CAM_MEM_FLAG_HW_READ_WRITE | CAM_MEM_FLAG_UMD_ACCESS | CAM_MEM_FLAG_HW_SHARED_ACCESS,
                               m->icp_device_iommu);
-  memcpy(cfg, bps_cfg[sensor->num()], cfg_size);
+  memcpy(cfg, is_ar0231 ? ar0231_bps_cfg : bps_cfg[sensor->num()], cfg_size);
 
   struct cam_icp_acquire_dev_info icp_info = {
     .scratch_mem_size = 0x0,
@@ -1206,7 +1212,7 @@ void SpectraCamera::configICP() {
   // BPSIQSettings struct
   uint32_t settings_size = sizeof(bps_settings[0]) / sizeof(bps_settings[0][0]);
   bps_iq.init(m, settings_size, 0x20, true, m->icp_device_iommu);
-  memcpy(bps_iq.ptr, bps_settings[sensor->num()], settings_size);
+  memcpy(bps_iq.ptr, is_ar0231 ? ar0231_bps_settings : bps_settings[sensor->num()], settings_size);
 
   // for cdm register writes, just make it bigger than you need
   bps_cdm_program_array.init(m, 0x1000, 0x20, true, m->icp_device_iommu);
@@ -1214,7 +1220,7 @@ void SpectraCamera::configICP() {
   // striping lib output
   uint32_t striping_size = sizeof(bps_striping_output[0]) / sizeof(bps_striping_output[0][0]);
   bps_striping.init(m, striping_size, 0x20, true, m->icp_device_iommu);
-  memcpy(bps_striping.ptr, bps_striping_output[sensor->num()], striping_size);
+  memcpy(bps_striping.ptr, is_ar0231 ? ar0231_bps_striping_output : bps_striping_output[sensor->num()], striping_size);
 
   // used internally by the BPS, we just allocate it.
   // size comes from the BPSStripingLib

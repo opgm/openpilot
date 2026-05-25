@@ -20,7 +20,13 @@ function agnos_init {
   # Check if AGNOS update is required
   if [ $(< /VERSION) != "$AGNOS_VERSION" ]; then
     AGNOS_PY="$DIR/openpilot/common/hardware/tici/agnos.py"
-    MANIFEST="$DIR/openpilot/system/hardware/tici/agnos.json"
+
+    if grep -aq "comma tici" /proc/device-tree/model; then
+      MANIFEST="$DIR/openpilot/system/hardware/tici/tici_agnos.json"
+    else
+      MANIFEST="$DIR/openpilot/system/hardware/tici/agnos.json"
+    fi
+
     if $AGNOS_PY --verify $MANIFEST; then
       sudo reboot
     fi

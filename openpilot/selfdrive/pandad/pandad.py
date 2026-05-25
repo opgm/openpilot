@@ -6,20 +6,20 @@ import time
 import signal
 import subprocess
 
-from panda import Panda, PandaDFU, PandaProtocolMismatch, McuType, FW_PATH
+from panda import Panda, PandaDFU, PandaProtocolMismatch, FW_PATH
 from openpilot.common.basedir import BASEDIR
 from openpilot.common.params import Params
 from openpilot.common.hardware import HARDWARE
 from openpilot.common.swaglog import cloudlog
 
 
-def get_expected_signature() -> bytes:
-  fn = os.path.join(FW_PATH, McuType.H7.config.app_fn)
+def get_expected_signature(panda: Panda) -> bytes:
+  fn = os.path.join(FW_PATH, panda.get_mcu_type().config.app_fn)
   return Panda.get_signature_from_firmware(fn)
 
-def flash_panda(panda_serial: str):
+def flash_panda(panda_serial: str) -> Panda:
   panda = Panda(panda_serial)
-  fw_signature = get_expected_signature()
+  fw_signature = get_expected_signature(panda)
   internal_panda = panda.is_internal()
 
   panda_version = "bootstub" if panda.bootstub else panda.get_version()
@@ -48,7 +48,7 @@ def flash_panda(panda_serial: str):
     cloudlog.info("Version mismatch after flashing, exiting")
     raise AssertionError
 
-  panda.close()
+  return panda
 
 
 def main() -> None:
@@ -95,11 +95,13 @@ def main() -> None:
       if len(panda_serials):
         assert len(panda_serials) == 1
         cloudlog.info(f"{len(panda_serials)} panda found, connecting - {panda_serials}")
-        flash_panda(panda_serials[0])
+        panda_serial = panda_serials[0]
+        panda = flash_panda(panda_serial)
+        panda.close()
 
         # run real pandad
         os.environ['MANAGER_DAEMON'] = 'pandad'
-        process = subprocess.Popen(["./pandad"], cwd=os.path.join(BASEDIR, "openpilot/selfdrive/pandad"))
+        process = subprocess.Popen(["./pandad", panda_serial], cwd=os.path.join(BASEDIR, "openpilot/selfdrive/pandad"))
         process.wait()
     # TODO: wrap all panda exceptions in a base panda exception
     except (usb1.USBErrorNoDevice, usb1.USBErrorPipe):
