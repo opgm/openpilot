@@ -1,0 +1,17 @@
+Import('env', 'arch', 'common', 'messaging')
+
+if arch != "Darwin":
+  import libusb
+  import opendbc
+
+  pandad_env = env.Clone()
+  pandad_env['CPPPATH'] += [libusb.INCLUDE_DIR, opendbc.INCLUDE_PATH]
+  pandad_env['LIBPATH'] += [libusb.LIB_DIR]
+
+  libs = [common, messaging, 'pthread', 'usb-1.0']
+  panda = pandad_env.Library('panda', ['panda.cc', 'panda_comms.cc', 'spi.cc'])
+
+  pandad_env.Program('pandad', ['main.cc', 'pandad.cc', 'panda_safety.cc'], LIBS=[panda] + libs)
+
+  if GetOption('extras'):
+    pandad_env.Program('tests/test_pandad_canprotocol', ['tests/test_pandad_canprotocol.cc'], LIBS=[panda] + libs)
