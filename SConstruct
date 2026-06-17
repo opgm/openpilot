@@ -198,7 +198,8 @@ Export('env', 'arch', 'acados')
 cache_dir = '/data/scons_cache' if arch == "larch64" else '/tmp/scons_cache'
 cache_size_limit = 4e9 if "CI" in os.environ else 2e9
 CacheDir(cache_dir)
-Clean(["."], cache_dir)
+if not os.environ.get("PRESERVE_SCONS_CACHE"):
+  Clean(["."], cache_dir)
 
 def prune_cache_dir(target=None, source=None, env=None):
   cache_files = sorted((os.path.join(root, f) for root, _, files in os.walk(cache_dir) for f in files), key=os.path.getmtime)
