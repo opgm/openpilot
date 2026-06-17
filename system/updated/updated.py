@@ -208,7 +208,7 @@ def handle_agnos_update() -> None:
 
   cur_version = HARDWARE.get_os_version()
   updated_version = run(["bash", "-c", r"unset AGNOS_VERSION && source launch_env.sh && \
-                          set_agnos_version && echo -n $AGNOS_VERSION"], OVERLAY_MERGED).strip()
+                          echo -n $AGNOS_VERSION"], OVERLAY_MERGED).strip()
 
   cloudlog.info(f"AGNOS version check: {cur_version} vs {updated_version}")
   if cur_version == updated_version:
