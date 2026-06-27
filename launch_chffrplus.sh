@@ -28,9 +28,12 @@ function agnos_init {
     fi
 
     if $AGNOS_PY --verify $MANIFEST; then
-      sudo reboot
+      echo "AGNOS update verified and staged; reboot required"
+      exit 0
     fi
-    $DIR/openpilot/common/hardware/tici/updater $AGNOS_PY $MANIFEST
+    sudo $AGNOS_PY --swap $MANIFEST
+    echo "AGNOS update flashed and staged; reboot required"
+    exit 0
   fi
 }
 
